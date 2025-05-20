@@ -27,7 +27,7 @@ const ChatbotScreen: React.FC = () => {
     setInputText('');
     setLoading(true);
     try {
-      const botText = await AIService.generateResponse(userMessage.text, 'demo-user') ?? '';
+      const botText = await AIService.generateResponse(userMessage.text) ?? '';
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
         text: botText,
