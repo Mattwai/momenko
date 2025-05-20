@@ -5,11 +5,13 @@ import { Provider as PaperProvider } from 'react-native-paper';
 import LoginScreen from './src/screens/auth/LoginScreen';
 import DashboardScreen from './src/screens/dashboard/DashboardScreen';
 import ChatbotScreen from './src/screens/chatbot/ChatbotScreen';
+import RegisterScreen from './src/screens/auth/RegisterScreen';
 
 export type RootStackParamList = {
   Login: undefined;
   Dashboard: undefined;
   Chatbot: undefined;
+  Register: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -20,6 +22,7 @@ const App = () => {
       <NavigationContainer>
         <Stack.Navigator initialRouteName="Login">
           <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Register" component={RegisterScreen} />
           <Stack.Screen name="Dashboard" component={DashboardScreen} />
           <Stack.Screen name="Chatbot" component={ChatbotScreen} />
         </Stack.Navigator>

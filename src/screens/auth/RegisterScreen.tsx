@@ -3,35 +3,37 @@ import { View, StyleSheet } from 'react-native';
 import { TextInput, Button, Text } from 'react-native-paper';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../../App';
-import { signInWithEmail } from '../../services/supabase/auth';
+import { signUpWithEmail } from '../../services/supabase/auth';
 
-type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
+type RegisterScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
 
 type Props = {
-  navigation: LoginScreenNavigationProp;
+  navigation: RegisterScreenNavigationProp;
 };
 
-const LoginScreen: React.FC<Props> = ({ navigation }) => {
+const RegisterScreen: React.FC<Props> = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  const handleLogin = async () => {
+  const handleRegister = async () => {
     setLoading(true);
     setError('');
-    const { error } = await signInWithEmail(email, password);
+    setSuccess('');
+    const { error } = await signUpWithEmail(email, password);
     setLoading(false);
     if (error) {
-      setError(error.message || 'Login failed');
+      setError(error.message || 'Registration failed');
     } else {
-      navigation.replace('Dashboard');
+      setSuccess('Registration successful! Please check your email to confirm your account.');
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text variant="headlineMedium">Welcome to Momenko</Text>
+      <Text variant="headlineMedium">Register</Text>
       <TextInput
         label="Email"
         value={email}
@@ -47,11 +49,12 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         style={styles.input}
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <Button mode="contained" onPress={handleLogin} loading={loading} disabled={loading}>
-        Login
-      </Button>
-      <Button onPress={() => navigation.replace('Register')} style={styles.registerButton}>
+      {success ? <Text style={styles.success}>{success}</Text> : null}
+      <Button mode="contained" onPress={handleRegister} loading={loading} disabled={loading}>
         Register
+      </Button>
+      <Button onPress={() => navigation.replace('Login')} style={styles.backButton}>
+        Back to Login
       </Button>
     </View>
   );
@@ -70,9 +73,13 @@ const styles = StyleSheet.create({
     color: 'red',
     marginBottom: 12,
   },
-  registerButton: {
+  success: {
+    color: 'green',
+    marginBottom: 12,
+  },
+  backButton: {
     marginTop: 8,
   },
 });
 
-export default LoginScreen; 
+export default RegisterScreen; 
