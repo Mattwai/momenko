@@ -172,3 +172,37 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# React Native
+node_modules/
+build/
+android/app/build/
+ios/Pods/
+*.log
+*.lock
+*.tmp
+*.swp
+*.swo
+.env
+# macOS
+.DS_Store
+# Xcode
+*.xcworkspace
+*.xcuserstate
+*.xcuserdata
+# Android
+*.iml
+.gradle
+/local.properties
+/.idea
+# VSCode
+.vscode/
+# Jest
+/coverage/
+# Metro
+.expo/
+.expo-shared/
+# TypeScript
+*.tsbuildinfo
+# Misc
+npm-debug.log*
