@@ -1,7 +1,7 @@
 import twilio from 'twilio';
 
 class TwilioService {
-  private client: any;
+  private client: unknown;
   private accountSid: string;
   private authToken: string;
 
@@ -11,11 +11,11 @@ class TwilioService {
     this.client = twilio(this.accountSid, this.authToken);
   }
 
-  async handleIncomingCall(from: string) {
+  async handleIncomingCall() {
     // Placeholder for call handling logic
   }
 
-  async registerPhoneNumber(userId: string, phoneNumber: string) {
+  async registerPhoneNumber() {
     // Placeholder for phone number registration
   }
 }

@@ -27,7 +27,7 @@ const ChatbotScreen: React.FC = () => {
     setInputText('');
     setLoading(true);
     try {
-      const botText = await AIService.generateResponse(userMessage.text, 'demo-user');
+      const botText = await AIService.generateResponse(userMessage.text, 'demo-user') ?? '';
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
         text: botText,
@@ -35,7 +35,7 @@ const ChatbotScreen: React.FC = () => {
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, botMessage]);
-    } catch (e) {
+    } catch {
       const errorMessage: Message = {
         id: (Date.now() + 2).toString(),
         text: 'Sorry, there was an error getting a response.',

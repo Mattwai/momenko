@@ -1,8 +1,13 @@
 import OpenAI from 'openai';
 
+interface MessageParam {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 class AIService {
   private openai: OpenAI;
-  private conversationHistory: any[] = [];
+  private conversationHistory: MessageParam[] = [];
 
   constructor() {
     this.openai = new OpenAI({
@@ -10,7 +15,7 @@ class AIService {
     });
   }
 
-  async generateResponse(userInput: string, userId: string) {
+  async generateResponse(userInput: string) {
     this.conversationHistory.push({
       role: 'user',
       content: userInput,
@@ -21,7 +26,7 @@ class AIService {
     });
     this.conversationHistory.push({
       role: 'assistant',
-      content: response.choices[0].message.content,
+      content: response.choices[0].message.content ?? '',
     });
     return response.choices[0].message.content;
   }
