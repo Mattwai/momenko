@@ -3,6 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import { TextInput, Button, Text } from 'react-native-paper';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../../App';
+import { signInWithEmail } from '../../services/supabase/auth';
 
 type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
 
@@ -13,10 +14,19 @@ type Props = {
 const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleLogin = () => {
-    // Placeholder: Navigate to Dashboard
-    navigation.replace('Dashboard');
+  const handleLogin = async () => {
+    setLoading(true);
+    setError('');
+    const { error } = await signInWithEmail(email, password);
+    setLoading(false);
+    if (error) {
+      setError(error.message || 'Login failed');
+    } else {
+      navigation.replace('Dashboard');
+    }
   };
 
   return (
@@ -36,7 +46,8 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         secureTextEntry
         style={styles.input}
       />
-      <Button mode="contained" onPress={handleLogin}>
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+      <Button mode="contained" onPress={handleLogin} loading={loading} disabled={loading}>
         Login
       </Button>
     </View>
@@ -50,6 +61,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   input: {
+    marginBottom: 12,
+  },
+  error: {
+    color: 'red',
     marginBottom: 12,
   },
 });
