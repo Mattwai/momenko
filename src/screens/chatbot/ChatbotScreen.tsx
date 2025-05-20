@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, FlatList } from 'react-native';
+import { View, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
 import { TextInput, Button, Text, Card } from 'react-native-paper';
+import AIService from '../../services/ai/AIService';
 
 interface Message {
   id: string;
@@ -12,18 +13,39 @@ interface Message {
 const ChatbotScreen: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSend = () => {
-    if (!inputText.trim()) return;
-    const newMessage: Message = {
+  const handleSend = async () => {
+    if (!inputText.trim() || loading) return;
+    const userMessage: Message = {
       id: Date.now().toString(),
       text: inputText,
       sender: 'user',
       timestamp: new Date(),
     };
-    setMessages([...messages, newMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInputText('');
-    // Placeholder: Add bot response logic later
+    setLoading(true);
+    try {
+      const botText = await AIService.generateResponse(userMessage.text, 'demo-user');
+      const botMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: botText,
+        sender: 'bot',
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, botMessage]);
+    } catch (e) {
+      const errorMessage: Message = {
+        id: (Date.now() + 2).toString(),
+        text: 'Sorry, there was an error getting a response.',
+        sender: 'bot',
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -39,14 +61,16 @@ const ChatbotScreen: React.FC = () => {
           </Card>
         )}
       />
+      {loading && <ActivityIndicator size="small" style={{ margin: 8 }} />}
       <View style={styles.inputContainer}>
         <TextInput
           value={inputText}
           onChangeText={setInputText}
           placeholder="Type a message..."
           style={styles.input}
+          disabled={loading}
         />
-        <Button mode="contained" onPress={handleSend}>
+        <Button mode="contained" onPress={handleSend} disabled={loading}>
           Send
         </Button>
       </View>
