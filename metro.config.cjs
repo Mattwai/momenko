@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 const { getDefaultConfig } = require('expo/metro-config');
 const exclusionList = require('metro-config/src/defaults/exclusionList');
 

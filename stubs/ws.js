@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 // stubs/ws.js
 module.exports = function () {
   throw new Error('WebSocket (ws) is not supported in React Native.');
