@@ -18,8 +18,6 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(true);
-  const [highContrast, setHighContrast] = useState(false);
-  const [largeText, setLargeText] = useState(true);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -99,6 +97,18 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
               />
             </Animatable.View>
           ))}
+
+          <Animatable.View animation="fadeInUp" delay={500}>
+            <Button
+              mode="contained"
+              style={{ marginBottom: 16, backgroundColor: '#8B5CF6', borderRadius: 12 }}
+              labelStyle={{ fontSize: 18 }}
+              onPress={() => navigation.navigate('Family')}
+              accessibilityLabel="Go to Family Dashboard"
+            >
+              Family Dashboard
+            </Button>
+          </Animatable.View>
 
           <Animatable.View animation="fadeInUp" delay={600}>
             <Button
