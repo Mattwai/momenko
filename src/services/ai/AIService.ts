@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { AI_API_KEY, AI_API_URL } from '@env';
 
 interface MessageParam {
   role: 'user' | 'assistant';
@@ -11,8 +12,8 @@ class AIService {
   private apiUrl: string;
 
   constructor() {
-    this.apiKey = process.env.DEEPSEEK_API_KEY || '';
-    this.apiUrl = process.env.DEEPSEEK_API_URL || 'https://api.deepseek.com/v1/chat/completions';
+    this.apiKey = AI_API_KEY;
+    this.apiUrl = AI_API_URL;
   }
 
   async generateResponse(userInput: string) {
@@ -40,7 +41,7 @@ class AIService {
         content: botContent,
       });
       return botContent;
-    } catch (error) {
+    } catch {
       return 'Sorry, there was an error getting a response.';
     }
   }

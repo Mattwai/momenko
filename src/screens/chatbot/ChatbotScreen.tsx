@@ -28,7 +28,7 @@ const ChatbotScreen: React.FC = () => {
         const { data } = await fetchChatHistory(uid);
         if (data) {
           setMessages(
-            data.map((msg: any) => ({
+            data.map((msg: { id: string; message: string; sender: 'user' | 'bot'; timestamp: string }) => ({
               id: msg.id,
               text: msg.message,
               sender: msg.sender,
@@ -50,7 +50,7 @@ const ChatbotScreen: React.FC = () => {
       sender: 'user',
       timestamp: new Date(),
     };
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages((prev: Message[]) => [...prev, userMessage]);
     setInputText('');
     setLoading(true);
     await addChatMessage(userId, userMessage.text, 'user');
@@ -62,7 +62,7 @@ const ChatbotScreen: React.FC = () => {
         sender: 'bot',
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, botMessage]);
+      setMessages((prev: Message[]) => [...prev, botMessage]);
       await addChatMessage(userId, botMessage.text, 'bot');
     } catch {
       const errorMessage: Message = {
@@ -71,7 +71,7 @@ const ChatbotScreen: React.FC = () => {
         sender: 'bot',
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, errorMessage]);
+      setMessages((prev: Message[]) => [...prev, errorMessage]);
       await addChatMessage(userId, errorMessage.text, 'bot');
     } finally {
       setLoading(false);
@@ -87,7 +87,7 @@ const ChatbotScreen: React.FC = () => {
       <FlatList
         data={messages}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
+        renderItem={({ item }: { item: Message }) => (
           <Card style={styles.messageCard}>
             <Card.Content>
               <Text>{item.sender === 'user' ? 'You: ' : 'Bot: '}{item.text}</Text>

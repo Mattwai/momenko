@@ -1,4 +1,5 @@
 import twilio from 'twilio';
+import { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN } from '@env';
 
 class TwilioService {
   private client: unknown;
@@ -6,8 +7,8 @@ class TwilioService {
   private authToken: string;
 
   constructor() {
-    this.accountSid = process.env.TWILIO_ACCOUNT_SID || '';
-    this.authToken = process.env.TWILIO_AUTH_TOKEN || '';
+    this.accountSid = TWILIO_ACCOUNT_SID;
+    this.authToken = TWILIO_AUTH_TOKEN;
     this.client = twilio(this.accountSid, this.authToken);
   }
 
