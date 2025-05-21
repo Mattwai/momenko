@@ -3,7 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import { TextInput, Button, Text } from 'react-native-paper';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../../App';
-import { signUpWithEmail } from '../../services/supabase/auth';
+import { signUpWithEmail, resendConfirmationEmail } from '../../services/supabase/auth';
 
 type RegisterScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
 
@@ -17,6 +17,8 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendMsg, setResendMsg] = useState('');
 
   const handleRegister = async () => {
     setLoading(true);
@@ -50,6 +52,30 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {success ? <Text style={styles.success}>{success}</Text> : null}
+      {success ? (
+        <>
+          <Button
+            mode="outlined"
+            onPress={async () => {
+              setResendLoading(true);
+              setResendMsg('');
+              const { error } = await resendConfirmationEmail(email);
+              setResendLoading(false);
+              if (error) {
+                setResendMsg(error.message || 'Failed to resend confirmation email.');
+              } else {
+                setResendMsg('Confirmation email resent! Please check your inbox.');
+              }
+            }}
+            loading={resendLoading}
+            disabled={resendLoading}
+            style={{ marginTop: 8 }}
+          >
+            Resend confirmation email
+          </Button>
+          {resendMsg ? <Text style={{ color: resendMsg.startsWith('Confirmation') ? 'green' : 'red', marginTop: 4 }}>{resendMsg}</Text> : null}
+        </>
+      ) : null}
       <Button mode="contained" onPress={handleRegister} loading={loading} disabled={loading}>
         Register
       </Button>

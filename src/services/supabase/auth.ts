@@ -5,7 +5,7 @@ export async function signUpWithEmail(email: string, password: string) {
 }
 
 export async function signInWithEmail(email: string, password: string) {
-  return supabase.auth.signIn({ email, password });
+  return supabase.auth.signInWithPassword({ email, password });
 }
 
 export async function signOut() {
@@ -13,8 +13,8 @@ export async function signOut() {
 }
 
 export async function getCurrentUserId(): Promise<string | null> {
-  const user = supabase.auth.user();
-  return user?.id ?? null;
+  const { data } = await supabase.auth.getUser();
+  return data?.user?.id ?? null;
 }
 
 export async function deleteAccount() {
@@ -22,4 +22,8 @@ export async function deleteAccount() {
   // You must use a Supabase Edge Function or call the admin API from a secure backend.
   // Here, we return an error message as a placeholder.
   return { error: { message: 'Account deletion must be handled by a secure backend or Supabase Edge Function.' } };
+}
+
+export async function resendConfirmationEmail(email: string) {
+  return supabase.auth.resend({ type: 'signup', email });
 } 
