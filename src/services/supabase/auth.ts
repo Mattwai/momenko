@@ -5,7 +5,7 @@ export async function signUpWithEmail(email: string, password: string) {
 }
 
 export async function signInWithEmail(email: string, password: string) {
-  return supabase.auth.signInWithPassword({ email, password });
+  return supabase.auth.signIn({ email, password });
 }
 
 export async function signOut() {
@@ -13,8 +13,8 @@ export async function signOut() {
 }
 
 export async function getCurrentUserId(): Promise<string | null> {
-  const { data } = await supabase.auth.getUser();
-  return data?.user?.id ?? null;
+  const user = supabase.auth.user();
+  return user?.id ?? null;
 }
 
 export async function deleteAccount() {
