@@ -2,10 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { TextInput, Button, Text } from 'react-native-paper';
 import { fetchUserProfile, updateUserProfile } from '../../services/supabase/profile';
-
-const userId = 'demo-user-id'; // Replace with real user ID from auth
+import { getCurrentUserId } from '../../services/supabase/auth';
 
 const ProfileScreen: React.FC = () => {
+  const [userId, setUserId] = useState<string | null>(null);
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(true);
@@ -17,18 +17,25 @@ const ProfileScreen: React.FC = () => {
     const loadProfile = async () => {
       setLoading(true);
       setError('');
-      const { data, error } = await fetchUserProfile(userId);
-      if (data) {
-        setFullName(data.full_name || '');
-        setPhoneNumber(data.phone_number || '');
+      const uid = await getCurrentUserId();
+      setUserId(uid);
+      if (uid) {
+        const { data, error } = await fetchUserProfile(uid);
+        if (data) {
+          setFullName(data.full_name || '');
+          setPhoneNumber(data.phone_number || '');
+        }
+        if (error) setError('Failed to load profile');
+      } else {
+        setError('User not authenticated');
       }
-      if (error) setError('Failed to load profile');
       setLoading(false);
     };
     loadProfile();
   }, []);
 
   const handleSave = async () => {
+    if (!userId) return;
     setSaving(true);
     setError('');
     setSuccess('');

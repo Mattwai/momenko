@@ -17,6 +17,9 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
       <Button mode="contained" onPress={() => navigation.navigate('Chatbot')}>
         Go to Chatbot
       </Button>
+      <Button onPress={() => navigation.navigate('Profile')} style={styles.profileButton}>
+        Profile
+      </Button>
     </View>
   );
 };
@@ -27,6 +30,9 @@ const styles = StyleSheet.create({
     padding: 20,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  profileButton: {
+    marginTop: 8,
   },
 });
 

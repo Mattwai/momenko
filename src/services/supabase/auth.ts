@@ -10,4 +10,9 @@ export async function signInWithEmail(email: string, password: string) {
 
 export async function signOut() {
   return supabase.auth.signOut();
+}
+
+export async function getCurrentUserId(): Promise<string | null> {
+  const { data } = await supabase.auth.getUser();
+  return data?.user?.id ?? null;
 } 
