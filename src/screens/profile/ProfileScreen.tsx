@@ -6,6 +6,7 @@ import { getCurrentUserId, signOut } from '../../services/supabase/auth';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../../App';
 import * as Animatable from 'react-native-animatable';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 type ProfileScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Profile'>;
 
@@ -17,6 +18,8 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(true);
+  const [highContrast, setHighContrast] = useState(false);
+  const [largeText, setLargeText] = useState(true);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -48,7 +51,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
     {
       title: 'Settings',
       icon: 'cog',
-      onPress: () => {},
+      onPress: () => navigation.navigate('Settings'),
     },
     {
       title: 'Help & Support',
@@ -62,51 +65,53 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-      <Animatable.View animation="fadeInDown" duration={1000}>
-        <View style={styles.header}>
-          <Avatar.Image
-            size={100}
-            source={{ uri: 'https://via.placeholder.com/100' }}
-            style={styles.avatar}
-          />
-          <Text variant="headlineSmall" style={styles.name}>
-            {fullName}
-          </Text>
-          <Text variant="bodyLarge" style={styles.email}>
-            {phoneNumber}
-          </Text>
-        </View>
-      </Animatable.View>
-
-      <View style={styles.content}>
-        {menuItems.map((item, index) => (
-          <Animatable.View
-            key={item.title}
-            animation="fadeInUp"
-            delay={index * 200}
-          >
-            <List.Item
-              title={item.title}
-              left={props => <List.Icon {...props} icon={item.icon} />}
-              right={props => <List.Icon {...props} icon="chevron-right" />}
-              onPress={item.onPress}
-              style={styles.listItem}
+    <SafeAreaView style={{flex: 1}} edges={["top","left","right"]}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+        <Animatable.View animation="fadeInDown" duration={1000}>
+          <View style={styles.header}>
+            <Avatar.Image
+              size={100}
+              source={{ uri: 'https://via.placeholder.com/100' }}
+              style={styles.avatar}
             />
-          </Animatable.View>
-        ))}
-
-        <Animatable.View animation="fadeInUp" delay={600}>
-          <Button
-            mode="outlined"
-            onPress={handleLogout}
-            style={styles.logoutButton}
-          >
-            Log Out
-          </Button>
+            <Text variant="headlineSmall" style={styles.name}>
+              {fullName}
+            </Text>
+            <Text variant="bodyLarge" style={styles.email}>
+              {phoneNumber}
+            </Text>
+          </View>
         </Animatable.View>
-      </View>
-    </ScrollView>
+
+        <View style={styles.content}>
+          {menuItems.map((item, index) => (
+            <Animatable.View
+              key={item.title}
+              animation="fadeInUp"
+              delay={index * 200}
+            >
+              <List.Item
+                title={item.title}
+                left={props => <List.Icon {...props} icon={item.icon} />}
+                right={props => <List.Icon {...props} icon="chevron-right" />}
+                onPress={item.onPress}
+                style={styles.listItem}
+              />
+            </Animatable.View>
+          ))}
+
+          <Animatable.View animation="fadeInUp" delay={600}>
+            <Button
+              mode="outlined"
+              onPress={handleLogout}
+              style={styles.logoutButton}
+            >
+              Log Out
+            </Button>
+          </Animatable.View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 

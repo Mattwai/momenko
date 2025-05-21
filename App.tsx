@@ -11,6 +11,9 @@ import RegisterScreen from './src/screens/auth/RegisterScreen';
 import ProfileScreen from './src/screens/profile/ProfileScreen';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import CognitiveAssessmentScreen from './src/screens/chatbot/CognitiveAssessmentScreen';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import SettingsScreen from './src/screens/profile/SettingsScreen';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -19,6 +22,8 @@ export type RootStackParamList = {
   Register: undefined;
   Profile: undefined;
   Main: undefined;
+  CognitiveAssessment: undefined;
+  Settings: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -34,7 +39,7 @@ function MainTabs() {
         tabBarStyle: { backgroundColor: theme.colors.surface, height: 96 },
         tabBarLabelStyle: { fontSize: 14, fontWeight: 'bold', paddingBottom: 8 },
         tabBarItemStyle: { paddingVertical: 8 },
-        tabBarIcon: ({ color, size, focused }) => {
+        tabBarIcon: ({ color, focused }) => {
           let iconName = '';
           if (route.name === 'Dashboard') iconName = 'view-dashboard-outline';
           else if (route.name === 'Chatbot') iconName = 'robot-outline';
@@ -52,44 +57,48 @@ function MainTabs() {
 
 const App = () => {
   return (
-    <PaperProvider theme={theme}>
-      <NavigationContainer>
-        <Stack.Navigator
-          initialRouteName="Login"
-          screenOptions={{
-            headerStyle: {
-              backgroundColor: theme.colors.primary,
-            },
-            headerTintColor: '#FFFFFF',
-            headerTitleStyle: {
-              fontWeight: 'bold',
-            },
-            cardStyle: { backgroundColor: theme.colors.background },
-            cardStyleInterpolator: ({ current: { progress } }) => ({
-              cardStyle: {
-                opacity: progress,
+    <SafeAreaProvider>
+      <PaperProvider theme={theme}>
+        <NavigationContainer>
+          <Stack.Navigator
+            initialRouteName="Login"
+            screenOptions={{
+              headerStyle: {
+                backgroundColor: theme.colors.primary,
               },
-            }),
-          }}
-        >
-          <Stack.Screen 
-            name="Login" 
-            component={LoginScreen}
-            options={{
-              headerShown: false,
+              headerTintColor: '#FFFFFF',
+              headerTitleStyle: {
+                fontWeight: 'bold',
+              },
+              cardStyle: { backgroundColor: theme.colors.background },
+              cardStyleInterpolator: ({ current: { progress } }) => ({
+                cardStyle: {
+                  opacity: progress,
+                },
+              }),
             }}
-          />
-          <Stack.Screen 
-            name="Register" 
-            component={RegisterScreen}
-            options={{
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
-        </Stack.Navigator>
-      </NavigationContainer>
-    </PaperProvider>
+          >
+            <Stack.Screen 
+              name="Login" 
+              component={LoginScreen}
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen 
+              name="Register" 
+              component={RegisterScreen}
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
+            <Stack.Screen name="CognitiveAssessment" component={CognitiveAssessmentScreen} />
+            <Stack.Screen name="Settings" component={SettingsScreen} />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </PaperProvider>
+    </SafeAreaProvider>
   );
 };
 

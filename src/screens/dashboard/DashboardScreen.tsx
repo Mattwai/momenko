@@ -4,10 +4,11 @@ import { Text } from 'react-native-paper';
 import * as Animatable from 'react-native-animatable';
 import EmergencyContactButton from '../../components/ui/EmergencyContactButton';
 import FamilyContactButton from '../../components/ui/FamilyContactButton';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const DashboardScreen: React.FC = () => {
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top","left","right"]}>
       <Animatable.View animation="fadeInDown" duration={1000}>
         <Text variant="headlineMedium" style={styles.welcome}>
           Welcome to Momenko
@@ -19,7 +20,7 @@ const DashboardScreen: React.FC = () => {
           <FamilyContactButton onPress={() => {}} />
         </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 

@@ -9,7 +9,12 @@ import RepeatButton from '../../components/ui/RepeatButton';
 import ProgressIndicator from '../../components/ui/ProgressIndicator';
 import ActivityPrompt from '../../components/ui/ActivityPrompt';
 import PersonalizedGreeting from '../../components/ui/PersonalizedGreeting';
-import AccessibilitySettings from '../../components/ui/AccessibilitySettings';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../../../App';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+declare function setTimeout(handler: (...args: unknown[]) => void, timeout?: number, ...args: unknown[]): number;
 
 interface Message {
   id: string;
@@ -18,11 +23,10 @@ interface Message {
 }
 
 const ChatbotScreen = () => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [messages, setMessages] = useState<Message[]>([]);
   const [listening, setListening] = useState(false);
   const [thinking, setThinking] = useState(false);
-  const [highContrast, setHighContrast] = useState(false);
-  const [largeText, setLargeText] = useState(true);
   const [lastBotMessage, setLastBotMessage] = useState('');
   const userName = 'Alex'; // Simulated user name
   const activityPrompt = 'What is your favorite childhood memory?'; // Simulated prompt
@@ -65,13 +69,10 @@ const ChatbotScreen = () => {
   };
 
   return (
-    <View style={[styles.container, highContrast && styles.highContrastBg]}>
-      <AccessibilitySettings
-        highContrast={highContrast}
-        largeText={largeText}
-        onToggleHighContrast={() => setHighContrast(h => !h)}
-        onToggleLargeText={() => setLargeText(l => !l)}
-      />
+    <SafeAreaView style={styles.container} edges={["top","left","right"]}>
+      <Button mode="outlined" onPress={() => navigation.navigate('CognitiveAssessment')} style={{ margin: 16 }}>
+        Start Cognitive Assessment
+      </Button>
       <PersonalizedGreeting name={userName} />
       <ActivityPrompt prompt={activityPrompt} />
       <View style={styles.topButtons}>
@@ -88,10 +89,9 @@ const ChatbotScreen = () => {
             style={[
               styles.messageBubble,
               msg.isUser ? styles.userMessage : styles.aiMessage,
-              highContrast && styles.highContrastBubble,
             ]}
           >
-            <LargeText style={[largeText && { fontSize: 24 }, highContrast && { color: '#fff' }]}> {msg.text} </LargeText>
+            <LargeText> {msg.text} </LargeText>
           </Animatable.View>
         ))}
       </ScrollView>
@@ -100,14 +100,14 @@ const ChatbotScreen = () => {
           mode="contained"
           icon="microphone"
           onPress={handleTalk}
-          style={[styles.talkButton, highContrast && { backgroundColor: '#000' }]}
-          labelStyle={{ fontSize: largeText ? 22 : 18 }}
+          style={styles.talkButton}
+          labelStyle={{ fontSize: 22 }}
         >
           Talk
         </Button>
         <RepeatButton onPress={handleRepeat} />
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -116,9 +116,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F9FAFB',
     justifyContent: 'flex-end',
-  },
-  highContrastBg: {
-    backgroundColor: '#000',
   },
   topButtons: {
     flexDirection: 'row',
@@ -147,9 +144,6 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     backgroundColor: '#F3F4F6',
     color: '#111827',
-  },
-  highContrastBubble: {
-    backgroundColor: '#222',
   },
   talkButtonContainer: {
     padding: 24,
