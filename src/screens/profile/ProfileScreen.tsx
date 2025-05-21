@@ -2,9 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { TextInput, Button, Text } from 'react-native-paper';
 import { fetchUserProfile, updateUserProfile } from '../../services/supabase/profile';
-import { getCurrentUserId } from '../../services/supabase/auth';
+import { getCurrentUserId, signOut, deleteAccount } from '../../services/supabase/auth';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../../../App';
 
-const ProfileScreen: React.FC = () => {
+type ProfileScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Profile'>;
+
+type Props = {
+  navigation: ProfileScreenNavigationProp;
+};
+
+const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   const [userId, setUserId] = useState<string | null>(null);
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -12,6 +20,7 @@ const ProfileScreen: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [deleteMsg, setDeleteMsg] = useState('');
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -48,6 +57,21 @@ const ProfileScreen: React.FC = () => {
     setSaving(false);
   };
 
+  const handleLogout = async () => {
+    await signOut();
+    navigation.replace('Login');
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleteMsg('');
+    const { error } = await deleteAccount();
+    if (error) {
+      setDeleteMsg(error.message);
+    } else {
+      setDeleteMsg('Account deleted.');
+    }
+  };
+
   if (loading) {
     return <Text>Loading...</Text>;
   }
@@ -73,6 +97,13 @@ const ProfileScreen: React.FC = () => {
       <Button mode="contained" onPress={handleSave} loading={saving} disabled={saving}>
         Save
       </Button>
+      <Button onPress={handleLogout} style={styles.logoutButton}>
+        Logout
+      </Button>
+      <Button onPress={handleDeleteAccount} style={styles.deleteButton}>
+        Delete Account
+      </Button>
+      {deleteMsg ? <Text style={styles.deleteMsg}>{deleteMsg}</Text> : null}
     </View>
   );
 };
@@ -93,6 +124,18 @@ const styles = StyleSheet.create({
   success: {
     color: 'green',
     marginBottom: 12,
+  },
+  logoutButton: {
+    marginTop: 16,
+    backgroundColor: '#eee',
+  },
+  deleteButton: {
+    marginTop: 8,
+    backgroundColor: '#ffdddd',
+  },
+  deleteMsg: {
+    color: 'red',
+    marginTop: 8,
   },
 });
 

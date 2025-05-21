@@ -15,4 +15,11 @@ export async function signOut() {
 export async function getCurrentUserId(): Promise<string | null> {
   const { data } = await supabase.auth.getUser();
   return data?.user?.id ?? null;
+}
+
+export async function deleteAccount() {
+  // Supabase does not allow deleting the user from the client SDK for security reasons.
+  // You must use a Supabase Edge Function or call the admin API from a secure backend.
+  // Here, we return an error message as a placeholder.
+  return { error: { message: 'Account deletion must be handled by a secure backend or Supabase Edge Function.' } };
 } 

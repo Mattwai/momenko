@@ -3,6 +3,7 @@ import { View, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
 import { TextInput, Button, Text, Card } from 'react-native-paper';
 import AIService from '../../services/ai/AIService';
 import { fetchChatHistory, addChatMessage } from '../../services/supabase/chat';
+import { getCurrentUserId } from '../../services/supabase/auth';
 
 interface Message {
   id: string;
@@ -11,35 +12,38 @@ interface Message {
   timestamp: Date;
 }
 
-const userId = 'demo-user-id'; // Replace with real user ID from auth
-
 const ChatbotScreen: React.FC = () => {
+  const [userId, setUserId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
 
   useEffect(() => {
-    const loadHistory = async () => {
+    const loadUserAndHistory = async () => {
       setInitialLoading(true);
-      const { data, error } = await fetchChatHistory(userId);
-      if (data) {
-        setMessages(
-          data.map((msg: any) => ({
-            id: msg.id,
-            text: msg.message,
-            sender: msg.sender,
-            timestamp: new Date(msg.timestamp),
-          }))
-        );
+      const uid = await getCurrentUserId();
+      setUserId(uid);
+      if (uid) {
+        const { data } = await fetchChatHistory(uid);
+        if (data) {
+          setMessages(
+            data.map((msg: any) => ({
+              id: msg.id,
+              text: msg.message,
+              sender: msg.sender,
+              timestamp: new Date(msg.timestamp),
+            }))
+          );
+        }
       }
       setInitialLoading(false);
     };
-    loadHistory();
+    loadUserAndHistory();
   }, []);
 
   const handleSend = async () => {
-    if (!inputText.trim() || loading) return;
+    if (!inputText.trim() || loading || !userId) return;
     const userMessage: Message = {
       id: Date.now().toString(),
       text: inputText,
@@ -74,7 +78,7 @@ const ChatbotScreen: React.FC = () => {
     }
   };
 
-  if (initialLoading) {
+  if (initialLoading || !userId) {
     return <ActivityIndicator size="large" style={{ flex: 1, justifyContent: 'center' }} />;
   }
 
