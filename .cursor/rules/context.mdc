@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+The application is targeted for elderly with dementia to use. They will primerily using the chatbot interface, their families should also be able to access it. It should prompt questions and activites to do based on Congitive Stimulation Theropy and should diagnose what stage of dementia the patient is at while talking and also consider that when asking types of questions and activities. I also want to develop a personalised AI for each account so over their conversations the AI will learn more about them and turn into their digital avatar so even if the patient does forget stuff the AI will remember. All the design and architecture decisions you make should be with these goals in mind. Ensure accessability is a key priority including easy to use, large text, good color contrast etc.

@@ -1,8 +1,15 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
-import { Text, useTheme, Avatar, Button } from 'react-native-paper';
+import { Button } from 'react-native-paper';
 import * as Speech from 'expo-speech';
 import * as Animatable from 'react-native-animatable';
+import LargeText from '../../components/ui/LargeText';
+import VoiceInputIndicator from '../../components/ui/VoiceInputIndicator';
+import RepeatButton from '../../components/ui/RepeatButton';
+import ProgressIndicator from '../../components/ui/ProgressIndicator';
+import ActivityPrompt from '../../components/ui/ActivityPrompt';
+import PersonalizedGreeting from '../../components/ui/PersonalizedGreeting';
+import AccessibilitySettings from '../../components/ui/AccessibilitySettings';
 
 interface Message {
   id: string;
@@ -11,8 +18,14 @@ interface Message {
 }
 
 const ChatbotScreen = () => {
-  const theme = useTheme();
   const [messages, setMessages] = useState<Message[]>([]);
+  const [listening, setListening] = useState(false);
+  const [thinking, setThinking] = useState(false);
+  const [highContrast, setHighContrast] = useState(false);
+  const [largeText, setLargeText] = useState(true);
+  const [lastBotMessage, setLastBotMessage] = useState('');
+  const userName = 'Alex'; // Simulated user name
+  const activityPrompt = 'What is your favorite childhood memory?'; // Simulated prompt
 
   const handleSend = (text: string) => {
     if (!text.trim()) return;
@@ -21,29 +34,51 @@ const ChatbotScreen = () => {
       text,
       isUser: true,
     };
-    // Simulate AI response
+    setMessages(prev => [...prev, newMessage]);
+    setThinking(true);
     setTimeout(() => {
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
-        text: 'This is a simulated AI response.',
+        text: 'That sounds wonderful! Can you tell me more?',
         isUser: false,
       };
+      setMessages(prev => [...prev, aiResponse]);
+      setLastBotMessage(aiResponse.text);
+      setThinking(false);
       Speech.speak(aiResponse.text, { language: 'en' });
-    }, 1000);
+    }, 1200);
   };
 
   // Placeholder for voice input
   const handleTalk = () => {
-    // In a real app, integrate speech-to-text here
-    handleSend('Hello, chatbot! (voice input placeholder)');
+    setListening(true);
+    setTimeout(() => {
+      setListening(false);
+      handleSend('Hello, chatbot! (voice input placeholder)');
+    }, 1800);
+  };
+
+  const handleRepeat = () => {
+    if (lastBotMessage) {
+      Speech.speak(lastBotMessage, { language: 'en' });
+    }
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.avatarContainer}>
-        <Avatar.Icon size={96} icon="robot" style={{ backgroundColor: theme.colors.primary }} />
-        <Text style={styles.callingText}>Talking to Momenko AI...</Text>
+    <View style={[styles.container, highContrast && styles.highContrastBg]}>
+      <AccessibilitySettings
+        highContrast={highContrast}
+        largeText={largeText}
+        onToggleHighContrast={() => setHighContrast(h => !h)}
+        onToggleLargeText={() => setLargeText(l => !l)}
+      />
+      <PersonalizedGreeting name={userName} />
+      <ActivityPrompt prompt={activityPrompt} />
+      <View style={styles.topButtons}>
+        {/* Remove EmergencyContactButton and FamilyContactButton from the topButtons section */}
       </View>
+      <VoiceInputIndicator active={listening} />
+      <ProgressIndicator visible={thinking} />
       <ScrollView style={styles.messagesContainer} contentContainerStyle={styles.messagesContent}>
         {messages.map((msg, index) => (
           <Animatable.View
@@ -53,9 +88,10 @@ const ChatbotScreen = () => {
             style={[
               styles.messageBubble,
               msg.isUser ? styles.userMessage : styles.aiMessage,
+              highContrast && styles.highContrastBubble,
             ]}
           >
-            <Text style={styles.messageText}>{msg.text}</Text>
+            <LargeText style={[largeText && { fontSize: 24 }, highContrast && { color: '#fff' }]}> {msg.text} </LargeText>
           </Animatable.View>
         ))}
       </ScrollView>
@@ -64,11 +100,12 @@ const ChatbotScreen = () => {
           mode="contained"
           icon="microphone"
           onPress={handleTalk}
-          style={styles.talkButton}
-          labelStyle={{ fontSize: 18 }}
+          style={[styles.talkButton, highContrast && { backgroundColor: '#000' }]}
+          labelStyle={{ fontSize: largeText ? 22 : 18 }}
         >
           Talk
         </Button>
+        <RepeatButton onPress={handleRepeat} />
       </View>
     </View>
   );
@@ -80,16 +117,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
     justifyContent: 'flex-end',
   },
-  avatarContainer: {
-    alignItems: 'center',
-    marginTop: 48,
-    marginBottom: 16,
+  highContrastBg: {
+    backgroundColor: '#000',
   },
-  callingText: {
-    marginTop: 12,
-    fontSize: 18,
-    color: '#6366F1',
-    fontWeight: '600',
+  topButtons: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 8,
   },
   messagesContainer: {
     flex: 1,
@@ -107,13 +141,15 @@ const styles = StyleSheet.create({
   userMessage: {
     alignSelf: 'flex-end',
     backgroundColor: '#6366F1',
+    color: '#fff',
   },
   aiMessage: {
     alignSelf: 'flex-start',
-    backgroundColor: '#E5E7EB',
+    backgroundColor: '#F3F4F6',
+    color: '#111827',
   },
-  messageText: {
-    color: '#1F2937',
+  highContrastBubble: {
+    backgroundColor: '#222',
   },
   talkButtonContainer: {
     padding: 24,
@@ -126,6 +162,7 @@ const styles = StyleSheet.create({
     width: 180,
     borderRadius: 32,
     backgroundColor: '#6366F1',
+    marginBottom: 8,
   },
 });
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
-import { Text, Avatar, Button, List, useTheme } from 'react-native-paper';
+import { Text, Avatar, Button, List } from 'react-native-paper';
 import { fetchUserProfile } from '../../services/supabase/profile';
 import { getCurrentUserId, signOut } from '../../services/supabase/auth';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -23,7 +23,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       setLoading(true);
       const uid = await getCurrentUserId();
       if (uid) {
-        const { data, error } = await fetchUserProfile(uid);
+        const { data } = await fetchUserProfile(uid);
         if (data) {
           setFullName(data.full_name || '');
           setPhoneNumber(data.phone_number || '');
@@ -62,7 +62,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
       <Animatable.View animation="fadeInDown" duration={1000}>
         <View style={styles.header}>
           <Avatar.Image
@@ -115,10 +115,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F9FAFB',
   },
+  scrollContent: {
+    paddingHorizontal: 16,
+  },
   header: {
     alignItems: 'center',
     padding: 24,
     backgroundColor: 'white',
+    marginTop: 32,
   },
   avatar: {
     marginBottom: 16,

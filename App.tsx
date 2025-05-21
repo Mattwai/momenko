@@ -31,13 +31,15 @@ function MainTabs() {
         headerShown: false,
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.text,
-        tabBarStyle: { backgroundColor: theme.colors.surface },
-        tabBarIcon: ({ color, size }) => {
+        tabBarStyle: { backgroundColor: theme.colors.surface, height: 96 },
+        tabBarLabelStyle: { fontSize: 14, fontWeight: 'bold', paddingBottom: 8 },
+        tabBarItemStyle: { paddingVertical: 8 },
+        tabBarIcon: ({ color, size, focused }) => {
           let iconName = '';
           if (route.name === 'Dashboard') iconName = 'view-dashboard-outline';
           else if (route.name === 'Chatbot') iconName = 'robot-outline';
           else if (route.name === 'Profile') iconName = 'account-circle-outline';
-          return <Icon name={iconName} color={color} size={size} />;
+          return <Icon name={iconName} color={color} size={focused ? 30 : 25} />;
         },
       })}
     >

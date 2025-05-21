@@ -2,6 +2,8 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text } from 'react-native-paper';
 import * as Animatable from 'react-native-animatable';
+import EmergencyContactButton from '../../components/ui/EmergencyContactButton';
+import FamilyContactButton from '../../components/ui/FamilyContactButton';
 
 const DashboardScreen: React.FC = () => {
   return (
@@ -11,6 +13,12 @@ const DashboardScreen: React.FC = () => {
           Welcome to Momenko
         </Text>
       </Animatable.View>
+      <View style={styles.topButtonsContainer}>
+        <View style={styles.topButtons}>
+          <EmergencyContactButton onPress={() => {}} />
+          <FamilyContactButton onPress={() => {}} />
+        </View>
+      </View>
     </View>
   );
 };
@@ -43,6 +51,19 @@ const styles = StyleSheet.create({
   cardDescription: {
     textAlign: 'center',
     opacity: 0.7,
+  },
+  topButtonsContainer: {
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    width: '100%',
+  },
+  topButtons: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    maxWidth: 500,
+    width: '100%',
+    gap: 12,
   },
 });
 
