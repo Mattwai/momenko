@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, Avatar, Button, List, useTheme } from 'react-native-paper';
-import { fetchUserProfile, updateUserProfile } from '../../services/supabase/profile';
-import { getCurrentUserId, signOut, deleteAccount } from '../../services/supabase/auth';
+import { fetchUserProfile } from '../../services/supabase/profile';
+import { getCurrentUserId, signOut } from '../../services/supabase/auth';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../../App';
 import * as Animatable from 'react-native-animatable';
@@ -14,64 +14,29 @@ type Props = {
 };
 
 const ProfileScreen: React.FC<Props> = ({ navigation }) => {
-  const [userId, setUserId] = useState<string | null>(null);
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [deleteMsg, setDeleteMsg] = useState('');
-  const theme = useTheme();
 
   useEffect(() => {
     const loadProfile = async () => {
       setLoading(true);
-      setError('');
       const uid = await getCurrentUserId();
-      setUserId(uid);
       if (uid) {
         const { data, error } = await fetchUserProfile(uid);
         if (data) {
           setFullName(data.full_name || '');
           setPhoneNumber(data.phone_number || '');
         }
-        if (error) setError('Failed to load profile');
-      } else {
-        setError('User not authenticated');
       }
       setLoading(false);
     };
     loadProfile();
   }, []);
 
-  const handleSave = async () => {
-    if (!userId) return;
-    setSaving(true);
-    setError('');
-    setSuccess('');
-    const { error } = await updateUserProfile(userId, { full_name: fullName, phone_number: phoneNumber });
-    if (error) {
-      setError('Failed to update profile');
-    } else {
-      setSuccess('Profile updated successfully!');
-    }
-    setSaving(false);
-  };
-
   const handleLogout = async () => {
     await signOut();
     navigation.replace('Login');
-  };
-
-  const handleDeleteAccount = async () => {
-    setDeleteMsg('');
-    const { error } = await deleteAccount();
-    if (error) {
-      setDeleteMsg(error.message);
-    } else {
-      setDeleteMsg('Account deleted.');
-    }
   };
 
   const menuItems = [

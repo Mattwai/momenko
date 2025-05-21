@@ -34,7 +34,7 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
     if (error) {
       setError(error.message || 'Registration failed');
     } else {
-      navigation.replace('Dashboard');
+      navigation.replace('Main');
     }
   };
 

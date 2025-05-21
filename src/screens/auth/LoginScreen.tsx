@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Image } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../../App';
@@ -28,7 +28,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
     if (error) {
       setError(error.message || 'Login failed');
     } else {
-      navigation.replace('Dashboard');
+      navigation.replace('Main');
     }
   };
 

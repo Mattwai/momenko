@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
-import { Text, TextInput, IconButton, useTheme } from 'react-native-paper';
+import { View, StyleSheet, ScrollView } from 'react-native';
+import { Text, useTheme, Avatar, Button } from 'react-native-paper';
+import * as Speech from 'expo-speech';
 import * as Animatable from 'react-native-animatable';
 
 interface Message {
@@ -10,22 +11,16 @@ interface Message {
 }
 
 const ChatbotScreen = () => {
-  const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState<Message[]>([]);
   const theme = useTheme();
+  const [messages, setMessages] = useState<Message[]>([]);
 
-  const handleSend = () => {
-    if (!message.trim()) return;
-
+  const handleSend = (text: string) => {
+    if (!text.trim()) return;
     const newMessage: Message = {
       id: Date.now().toString(),
-      text: message,
+      text,
       isUser: true,
     };
-
-    setMessages([...messages, newMessage]);
-    setMessage('');
-
     // Simulate AI response
     setTimeout(() => {
       const aiResponse: Message = {
@@ -33,19 +28,23 @@ const ChatbotScreen = () => {
         text: 'This is a simulated AI response.',
         isUser: false,
       };
-      setMessages(prev => [...prev, aiResponse]);
+      Speech.speak(aiResponse.text, { language: 'en' });
     }, 1000);
   };
 
+  // Placeholder for voice input
+  const handleTalk = () => {
+    // In a real app, integrate speech-to-text here
+    handleSend('Hello, chatbot! (voice input placeholder)');
+  };
+
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView
-        style={styles.messagesContainer}
-        contentContainerStyle={styles.messagesContent}
-      >
+    <View style={styles.container}>
+      <View style={styles.avatarContainer}>
+        <Avatar.Icon size={96} icon="robot" style={{ backgroundColor: theme.colors.primary }} />
+        <Text style={styles.callingText}>Talking to Momenko AI...</Text>
+      </View>
+      <ScrollView style={styles.messagesContainer} contentContainerStyle={styles.messagesContent}>
         {messages.map((msg, index) => (
           <Animatable.View
             key={msg.id}
@@ -60,24 +59,18 @@ const ChatbotScreen = () => {
           </Animatable.View>
         ))}
       </ScrollView>
-
-      <View style={styles.inputContainer}>
-        <TextInput
-          mode="outlined"
-          value={message}
-          onChangeText={setMessage}
-          placeholder="Type your message..."
-          style={styles.input}
-          right={
-            <TextInput.Icon
-              icon="send"
-              onPress={handleSend}
-              disabled={!message.trim()}
-            />
-          }
-        />
+      <View style={styles.talkButtonContainer}>
+        <Button
+          mode="contained"
+          icon="microphone"
+          onPress={handleTalk}
+          style={styles.talkButton}
+          labelStyle={{ fontSize: 18 }}
+        >
+          Talk
+        </Button>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 };
 
@@ -85,12 +78,25 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
+    justifyContent: 'flex-end',
+  },
+  avatarContainer: {
+    alignItems: 'center',
+    marginTop: 48,
+    marginBottom: 16,
+  },
+  callingText: {
+    marginTop: 12,
+    fontSize: 18,
+    color: '#6366F1',
+    fontWeight: '600',
   },
   messagesContainer: {
     flex: 1,
+    paddingHorizontal: 16,
   },
   messagesContent: {
-    padding: 16,
+    paddingBottom: 16,
   },
   messageBubble: {
     maxWidth: '80%',
@@ -109,14 +115,17 @@ const styles = StyleSheet.create({
   messageText: {
     color: '#1F2937',
   },
-  inputContainer: {
-    padding: 16,
+  talkButtonContainer: {
+    padding: 24,
     backgroundColor: 'white',
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
+    alignItems: 'center',
   },
-  input: {
-    backgroundColor: 'white',
+  talkButton: {
+    width: 180,
+    borderRadius: 32,
+    backgroundColor: '#6366F1',
   },
 });
 
