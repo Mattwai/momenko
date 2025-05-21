@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { TextInput, Button, Text } from 'react-native-paper';
+import { View, StyleSheet, ScrollView } from 'react-native';
+import { Text, Avatar, Button, List, useTheme } from 'react-native-paper';
 import { fetchUserProfile, updateUserProfile } from '../../services/supabase/profile';
 import { getCurrentUserId, signOut, deleteAccount } from '../../services/supabase/auth';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../../App';
+import * as Animatable from 'react-native-animatable';
 
 type ProfileScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Profile'>;
 
@@ -21,6 +22,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [deleteMsg, setDeleteMsg] = useState('');
+  const theme = useTheme();
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -72,70 +74,106 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
+  const menuItems = [
+    {
+      title: 'Personal Information',
+      icon: 'account',
+      onPress: () => {},
+    },
+    {
+      title: 'Settings',
+      icon: 'cog',
+      onPress: () => {},
+    },
+    {
+      title: 'Help & Support',
+      icon: 'help-circle',
+      onPress: () => {},
+    },
+  ];
+
   if (loading) {
     return <Text>Loading...</Text>;
   }
 
   return (
-    <View style={styles.container}>
-      <Text variant="headlineMedium">Profile</Text>
-      <TextInput
-        label="Full Name"
-        value={fullName}
-        onChangeText={setFullName}
-        style={styles.input}
-      />
-      <TextInput
-        label="Phone Number"
-        value={phoneNumber}
-        onChangeText={setPhoneNumber}
-        style={styles.input}
-        keyboardType="phone-pad"
-      />
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      {success ? <Text style={styles.success}>{success}</Text> : null}
-      <Button mode="contained" onPress={handleSave} loading={saving} disabled={saving}>
-        Save
-      </Button>
-      <Button onPress={handleLogout} style={styles.logoutButton}>
-        Logout
-      </Button>
-      <Button onPress={handleDeleteAccount} style={styles.deleteButton}>
-        Delete Account
-      </Button>
-      {deleteMsg ? <Text style={styles.deleteMsg}>{deleteMsg}</Text> : null}
-    </View>
+    <ScrollView style={styles.container}>
+      <Animatable.View animation="fadeInDown" duration={1000}>
+        <View style={styles.header}>
+          <Avatar.Image
+            size={100}
+            source={{ uri: 'https://via.placeholder.com/100' }}
+            style={styles.avatar}
+          />
+          <Text variant="headlineSmall" style={styles.name}>
+            {fullName}
+          </Text>
+          <Text variant="bodyLarge" style={styles.email}>
+            {phoneNumber}
+          </Text>
+        </View>
+      </Animatable.View>
+
+      <View style={styles.content}>
+        {menuItems.map((item, index) => (
+          <Animatable.View
+            key={item.title}
+            animation="fadeInUp"
+            delay={index * 200}
+          >
+            <List.Item
+              title={item.title}
+              left={props => <List.Icon {...props} icon={item.icon} />}
+              right={props => <List.Icon {...props} icon="chevron-right" />}
+              onPress={item.onPress}
+              style={styles.listItem}
+            />
+          </Animatable.View>
+        ))}
+
+        <Animatable.View animation="fadeInUp" delay={600}>
+          <Button
+            mode="outlined"
+            onPress={handleLogout}
+            style={styles.logoutButton}
+          >
+            Log Out
+          </Button>
+        </Animatable.View>
+      </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    justifyContent: 'center',
+    backgroundColor: '#F9FAFB',
   },
-  input: {
-    marginBottom: 12,
+  header: {
+    alignItems: 'center',
+    padding: 24,
+    backgroundColor: 'white',
   },
-  error: {
-    color: 'red',
-    marginBottom: 12,
+  avatar: {
+    marginBottom: 16,
   },
-  success: {
-    color: 'green',
-    marginBottom: 12,
+  name: {
+    marginBottom: 4,
+  },
+  email: {
+    opacity: 0.7,
+  },
+  content: {
+    padding: 16,
+  },
+  listItem: {
+    backgroundColor: 'white',
+    marginBottom: 8,
+    borderRadius: 8,
   },
   logoutButton: {
-    marginTop: 16,
-    backgroundColor: '#eee',
-  },
-  deleteButton: {
-    marginTop: 8,
-    backgroundColor: '#ffdddd',
-  },
-  deleteMsg: {
-    color: 'red',
-    marginTop: 8,
+    marginTop: 24,
   },
 });
 
