@@ -41,4 +41,18 @@ export async function addFamilyConnection(userId: string, connection: { name: st
   return supabase
     .from('family_connections')
     .insert([{ user_id: userId, ...connection }]);
+}
+
+export async function updateUserMemory(memoryId: string, content: string) {
+  return supabase
+    .from('user_memories')
+    .update({ content })
+    .eq('id', memoryId);
+}
+
+export async function deleteUserMemory(memoryId: string) {
+  return supabase
+    .from('user_memories')
+    .delete()
+    .eq('id', memoryId);
 } 

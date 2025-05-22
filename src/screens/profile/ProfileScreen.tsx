@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, Avatar, Button, List, TextInput } from 'react-native-paper';
-import { fetchUserProfile, fetchUserMemories, addUserMemory } from '../../services/supabase/profile';
+import { fetchUserProfile, fetchUserMemories, addUserMemory, updateUserMemory, deleteUserMemory } from '../../services/supabase/profile';
 import { getCurrentUserId, signOut } from '../../services/supabase/auth';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../../App';
@@ -63,17 +63,23 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
     setEditContent(memory.content);
   };
 
+  const refreshMemories = async (userId: string) => {
+    setMemoriesLoading(true);
+    const { data: mems } = await fetchUserMemories(userId);
+    setMemories(mems || []);
+    setMemoriesLoading(false);
+  };
+
   const handleSaveMemory = async (memory: Memory) => {
-    // For simplicity, just add a new memory and remove the old one (real app: update in DB)
-    await addUserMemory(memory.user_id, { type: memory.type, content: editContent });
-    setMemories(memories => memories.map(m => m.id === memory.id ? { ...m, content: editContent } : m));
+    await updateUserMemory(memory.id, editContent);
+    if (memory.user_id) await refreshMemories(memory.user_id);
     setEditingMemoryId(null);
     setEditContent('');
   };
 
-  const handleDeleteMemory = (memory: Memory) => {
-    // For demo: just remove from UI (real app: delete from DB)
-    setMemories(memories => memories.filter(m => m.id !== memory.id));
+  const handleDeleteMemory = async (memory: Memory) => {
+    await deleteUserMemory(memory.id);
+    if (memory.user_id) await refreshMemories(memory.user_id);
   };
 
   const menuItems = [
