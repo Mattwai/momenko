@@ -1,133 +1,181 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
-import { TextInput, Button, Text, Card } from 'react-native-paper';
-import AIService from '../../services/ai/AIService';
-import { fetchChatHistory, addChatMessage } from '../../services/supabase/chat';
-import { getCurrentUserId } from '../../services/supabase/auth';
+import React, { useState } from 'react';
+import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { Text } from 'react-native-paper';
+import * as Animatable from 'react-native-animatable';
+import ProgressIndicator from '../../components/ui/ProgressIndicator';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../../../App';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 interface Message {
   id: string;
   text: string;
-  sender: 'user' | 'bot';
-  timestamp: Date;
+  isUser: boolean;
 }
 
-const ChatbotScreen: React.FC = () => {
-  const [userId, setUserId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [inputText, setInputText] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true);
+const ChatbotScreen = () => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const [messages] = useState<Message[]>([]);
+  const [thinking] = useState(false);
 
-  useEffect(() => {
-    const loadUserAndHistory = async () => {
-      setInitialLoading(true);
-      const uid = await getCurrentUserId();
-      setUserId(uid);
-      if (uid) {
-        const { data } = await fetchChatHistory(uid);
-        if (data) {
-          setMessages(
-            data.map((msg: { id: string; message: string; sender: 'user' | 'bot'; timestamp: string }) => ({
-              id: msg.id,
-              text: msg.message,
-              sender: msg.sender,
-              timestamp: new Date(msg.timestamp),
-            }))
-          );
-        }
-      }
-      setInitialLoading(false);
-    };
-    loadUserAndHistory();
-  }, []);
-
-  const handleSend = async () => {
-    if (!inputText.trim() || loading || !userId) return;
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      text: inputText,
-      sender: 'user',
-      timestamp: new Date(),
-    };
-    setMessages((prev: Message[]) => [...prev, userMessage]);
-    setInputText('');
-    setLoading(true);
-    await addChatMessage(userId, userMessage.text, 'user');
-    try {
-      const botText = await AIService.generateResponse(userMessage.text) ?? '';
-      const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: botText,
-        sender: 'bot',
-        timestamp: new Date(),
-      };
-      setMessages((prev: Message[]) => [...prev, botMessage]);
-      await addChatMessage(userId, botMessage.text, 'bot');
-    } catch {
-      const errorMessage: Message = {
-        id: (Date.now() + 2).toString(),
-        text: 'Sorry, there was an error getting a response.',
-        sender: 'bot',
-        timestamp: new Date(),
-      };
-      setMessages((prev: Message[]) => [...prev, errorMessage]);
-      await addChatMessage(userId, errorMessage.text, 'bot');
-    } finally {
-      setLoading(false);
-    }
+  const handleTalk = () => {
+    navigation.navigate('ChatbotCall');
   };
 
-  if (initialLoading || !userId) {
-    return <ActivityIndicator size="large" style={{ flex: 1, justifyContent: 'center' }} />;
-  }
+  const renderChatView = () => (
+    <View style={styles.chatCard}>
+      <Text style={styles.sectionHeader} accessibilityRole="header">Conversations</Text>
+      <ScrollView style={styles.messagesContainer} contentContainerStyle={styles.messagesContent} accessibilityLabel="Chat transcript">
+        {[...messages].sort((a, b) => Number(b.id) - Number(a.id)).map((msg, index) => (
+          <Animatable.View
+            key={msg.id}
+            animation="fadeInUp"
+            delay={index * 100}
+            style={[
+              styles.messageBubble,
+              msg.isUser ? styles.userMessage : styles.aiMessage,
+            ]}
+          >
+            <Text style={[styles.messageText, { fontSize: 28, color: msg.isUser ? '#fff' : '#111827', lineHeight: 36 }]}>{msg.text}</Text>
+          </Animatable.View>
+        ))}
+      </ScrollView>
+    </View>
+  );
 
   return (
-    <View style={styles.container}>
-      <FlatList
-        data={messages}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }: { item: Message }) => (
-          <Card style={styles.messageCard}>
-            <Card.Content>
-              <Text>{item.sender === 'user' ? 'You: ' : 'Bot: '}{item.text}</Text>
-            </Card.Content>
-          </Card>
-        )}
-      />
-      {loading && <ActivityIndicator size="small" style={{ margin: 8 }} />}
-      <View style={styles.inputContainer}>
-        <TextInput
-          value={inputText}
-          onChangeText={setInputText}
-          placeholder="Type a message..."
-          style={styles.input}
-          disabled={loading}
-        />
-        <Button mode="contained" onPress={handleSend} disabled={loading}>
-          Send
-        </Button>
+    <SafeAreaView style={styles.container} edges={["top","left","right"]}>
+      <View style={styles.headerSection}>
+        <Text style={styles.greetingText}>I'm here to help you today.</Text>
       </View>
-    </View>
+      <ProgressIndicator visible={thinking} />
+      {renderChatView()}
+      <View style={styles.fabContainer} pointerEvents="box-none">
+        <TouchableOpacity
+          onPress={handleTalk}
+          style={[styles.fab, { width: 96, height: 96, borderRadius: 48, backgroundColor: '#6366F1' }]}
+          accessible
+          accessibilityRole="button"
+          accessibilityLabel="Start call"
+          activeOpacity={0.7}
+        >
+          <Icon name="phone" size={54} color="#fff" style={{ alignSelf: 'center' }} />
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    backgroundColor: '#fff',
   },
-  messageCard: {
+  topButtons: {
+    flexDirection: 'row',
+    justifyContent: 'center',
     marginBottom: 8,
   },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 8,
-  },
-  input: {
+  messagesContainer: {
     flex: 1,
-    marginRight: 8,
+    paddingHorizontal: 16,
+  },
+  messagesContent: {
+    paddingBottom: 16,
+  },
+  messageBubble: {
+    maxWidth: '80%',
+    padding: 18,
+    borderRadius: 20,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  userMessage: {
+    alignSelf: 'flex-end',
+    backgroundColor: '#6366F1',
+  },
+  aiMessage: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#F3F4F6',
+  },
+  messageText: {
+    color: '#111827',
+    fontSize: 22,
+  },
+  fabContainer: {
+    position: 'absolute',
+    bottom: 32,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 10,
+    pointerEvents: 'box-none',
+    padding: 0,
+    margin: 0,
+  },
+  fab: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#6366F1',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    marginLeft: 0,
+    marginRight: 0,
+  },
+  sectionHeader: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    color: '#3730A3',
+    textAlign: 'left',
+    backgroundColor: '#E0E7FF',
+    borderRadius: 16,
+    marginBottom: 8,
+    marginTop: 8,
+  },
+  headerSection: {
+    paddingTop: 32,
+    paddingBottom: 16,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+  },
+  greetingText: {
+    fontSize: 26,
+    color: '#6366F1',
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 0,
+  },
+  chatCard: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 24,
+    marginHorizontal: 16,
+    marginBottom: 24,
+    paddingTop: 8,
+    paddingHorizontal: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  fabContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 

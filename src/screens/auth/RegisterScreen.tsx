@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { TextInput, Button, Text } from 'react-native-paper';
+import { Button, Text } from 'react-native-paper';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../../App';
-import { signUpWithEmail, resendConfirmationEmail } from '../../services/supabase/auth';
+import { signUpWithEmail } from '../../services/supabase/auth';
+import { GradientBackground } from '../../components/ui/GradientBackground';
+import { AnimatedInput } from '../../components/ui/AnimatedInput';
+import * as Animatable from 'react-native-animatable';
 
-type RegisterScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
+type RegisterScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Register'>;
 
 type Props = {
   navigation: RegisterScreenNavigationProp;
@@ -14,97 +17,128 @@ type Props = {
 const RegisterScreen: React.FC<Props> = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [resendLoading, setResendLoading] = useState(false);
-  const [resendMsg, setResendMsg] = useState('');
 
   const handleRegister = async () => {
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
     setLoading(true);
     setError('');
-    setSuccess('');
     const { error } = await signUpWithEmail(email, password);
     setLoading(false);
     if (error) {
       setError(error.message || 'Registration failed');
     } else {
-      setSuccess('Registration successful! Please check your email to confirm your account.');
+      navigation.replace('Main');
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text variant="headlineMedium">Register</Text>
-      <TextInput
-        label="Email"
-        value={email}
-        onChangeText={setEmail}
-        style={styles.input}
-        autoCapitalize="none"
-      />
-      <TextInput
-        label="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        style={styles.input}
-      />
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      {success ? <Text style={styles.success}>{success}</Text> : null}
-      {success ? (
-        <>
-          <Button
-            mode="outlined"
-            onPress={async () => {
-              setResendLoading(true);
-              setResendMsg('');
-              const { error } = await resendConfirmationEmail(email);
-              setResendLoading(false);
-              if (error) {
-                setResendMsg(error.message || 'Failed to resend confirmation email.');
-              } else {
-                setResendMsg('Confirmation email resent! Please check your inbox.');
-              }
-            }}
-            loading={resendLoading}
-            disabled={resendLoading}
-            style={{ marginTop: 8 }}
-          >
-            Resend confirmation email
-          </Button>
-          {resendMsg ? <Text style={{ color: resendMsg.startsWith('Confirmation') ? 'green' : 'red', marginTop: 4 }}>{resendMsg}</Text> : null}
-        </>
-      ) : null}
-      <Button mode="contained" onPress={handleRegister} loading={loading} disabled={loading}>
-        Register
-      </Button>
-      <Button onPress={() => navigation.replace('Login')} style={styles.backButton}>
-        Back to Login
-      </Button>
-    </View>
+    <GradientBackground>
+      <View style={styles.container}>
+        <Animatable.View animation="fadeInDown" duration={1000}>
+          <Text variant="displaySmall" style={styles.title}>
+            Create Account
+          </Text>
+          <Text variant="bodyLarge" style={styles.subtitle}>
+            Join us today
+          </Text>
+        </Animatable.View>
+
+        <View style={styles.formContainer}>
+          <AnimatedInput
+            label="Email"
+            value={email}
+            onChangeText={setEmail}
+            error={error}
+          />
+          <AnimatedInput
+            label="Password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            error={error}
+          />
+          <AnimatedInput
+            label="Confirm Password"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry
+            error={error}
+          />
+
+          <Animatable.View animation="fadeInUp" delay={400}>
+            <Button
+              mode="contained"
+              onPress={handleRegister}
+              loading={loading}
+              disabled={loading}
+              style={styles.registerButton}
+              contentStyle={styles.buttonContent}
+            >
+              Sign Up
+            </Button>
+          </Animatable.View>
+
+          <Animatable.View animation="fadeInUp" delay={600}>
+            <Button
+              mode="text"
+              onPress={() => navigation.replace('Login')}
+              style={styles.loginButton}
+            >
+              Already have an account? Sign In
+            </Button>
+          </Animatable.View>
+        </View>
+      </View>
+    </GradientBackground>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    padding: 24,
     justifyContent: 'center',
   },
-  input: {
-    marginBottom: 12,
+  title: {
+    color: 'white',
+    textAlign: 'center',
+    marginBottom: 8,
   },
-  error: {
-    color: 'red',
-    marginBottom: 12,
+  subtitle: {
+    color: 'white',
+    textAlign: 'center',
+    opacity: 0.8,
+    marginBottom: 32,
   },
-  success: {
-    color: 'green',
-    marginBottom: 12,
+  formContainer: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
-  backButton: {
-    marginTop: 8,
+  registerButton: {
+    marginTop: 16,
+    borderRadius: 8,
+  },
+  buttonContent: {
+    paddingVertical: 8,
+  },
+  loginButton: {
+    marginTop: 16,
   },
 });
 
