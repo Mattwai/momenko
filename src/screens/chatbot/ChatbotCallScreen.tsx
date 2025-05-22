@@ -35,7 +35,7 @@ const ChatbotCallScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.callScreenWrapper} edges={["top","left","right"]}>
+    <SafeAreaView style={styles.callScreenWrapper} edges={["left","right"]}>
       <ImageBackground
         source={AVATAR_BG}
         style={styles.callContainer}
@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
   },
   timeText: {
     position: 'absolute',
-    top: 56,
+    top: 72,
     color: '#fff',
     fontSize: 32,
     fontWeight: '700',
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
     borderRadius: 48,
     justifyContent: 'center',
     alignItems: 'center',
-    marginHorizontal: 48,
+    marginHorizontal: 56,
     elevation: 6,
   },
   muteButton: {
