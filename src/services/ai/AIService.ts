@@ -7,6 +7,15 @@ interface MessageParam {
   content: string;
 }
 
+interface Memory {
+  id: string;
+  user_id: string;
+  type: string;
+  content: string;
+  metadata?: object;
+  created_at: string;
+}
+
 class AIService {
   private conversationHistory: MessageParam[] = [];
   private apiKey: string;
@@ -51,7 +60,7 @@ class AIService {
     const { data: memories } = await fetchUserMemories(userId);
     let memoryContext = '';
     if (memories && memories.length > 0) {
-      memoryContext = memories.map((m: any) => `- ${m.content}`).join('\n');
+      memoryContext = (memories as Memory[]).map((m) => `- ${m.content}`).join('\n');
     }
     const systemPrompt = memoryContext
       ? `Here are some important facts about the user. Use them to personalize your response.\n${memoryContext}`

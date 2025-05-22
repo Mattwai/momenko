@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { Button } from 'react-native-paper';
 import * as Speech from 'expo-speech';
@@ -13,6 +13,8 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../../App';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AIService from '../../services/ai/AIService';
+import { getCurrentUserId } from '../../services/supabase/auth';
 
 declare function setTimeout(handler: (...args: unknown[]) => void, timeout?: number, ...args: unknown[]): number;
 
@@ -30,9 +32,14 @@ const ChatbotScreen = () => {
   const [lastBotMessage, setLastBotMessage] = useState('');
   const userName = 'Alex'; // Simulated user name
   const activityPrompt = 'What is your favorite childhood memory?'; // Simulated prompt
+  const [userId, setUserId] = useState<string | null>(null);
 
-  const handleSend = (text: string) => {
-    if (!text.trim()) return;
+  useEffect(() => {
+    getCurrentUserId().then(setUserId);
+  }, []);
+
+  const handleSend = async (text: string) => {
+    if (!text.trim() || !userId) return;
     const newMessage: Message = {
       id: Date.now().toString(),
       text,
@@ -40,17 +47,16 @@ const ChatbotScreen = () => {
     };
     setMessages(prev => [...prev, newMessage]);
     setThinking(true);
-    setTimeout(() => {
-      const aiResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        text: 'That sounds wonderful! Can you tell me more?',
-        isUser: false,
-      };
-      setMessages(prev => [...prev, aiResponse]);
-      setLastBotMessage(aiResponse.text);
-      setThinking(false);
-      Speech.speak(aiResponse.text, { language: 'en' });
-    }, 1200);
+    const aiText = await AIService.generatePersonalizedResponse(userId, text);
+    const aiResponse: Message = {
+      id: (Date.now() + 1).toString(),
+      text: aiText,
+      isUser: false,
+    };
+    setMessages(prev => [...prev, aiResponse]);
+    setLastBotMessage(aiText);
+    setThinking(false);
+    Speech.speak(aiText, { language: 'en' });
   };
 
   // Placeholder for voice input
