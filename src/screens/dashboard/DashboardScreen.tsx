@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, Card, Button, useTheme } from 'react-native-paper';
 import * as Animatable from 'react-native-animatable';
@@ -8,16 +8,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import PersonalizedGreeting from '../../components/ui/PersonalizedGreeting';
 import ActivityPrompt from '../../components/ui/ActivityPrompt';
 import { GradientBackground } from '../../components/ui/GradientBackground';
-import AccessibilitySettings from '../../components/ui/AccessibilitySettings';
 import LargeText from '../../components/ui/LargeText';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { AnimatedCard } from '../../components/AnimatedCard';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../../../App';
 
 const DashboardScreen: React.FC = () => {
   const theme = useTheme();
-  const [showAccessibility, setShowAccessibility] = useState(false);
-  const [highContrast, setHighContrast] = useState(false);
-  const [largeText, setLargeText] = useState(false);
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   
   // Mock data - in a real app, this would come from an API or context
   const activities = [
@@ -31,6 +31,10 @@ const DashboardScreen: React.FC = () => {
     { title: 'Lunch', time: '1:00 PM', icon: 'food-apple' as const },
     { title: 'Family Call', time: '3:00 PM', icon: 'phone' as const },
   ];
+  
+  const handleStartConversation = () => {
+    navigation.navigate('ChatbotCall');
+  };
 
   return (
     <GradientBackground>
@@ -47,28 +51,29 @@ const DashboardScreen: React.FC = () => {
             <View style={styles.topButtons}>
               <EmergencyContactButton onPress={() => {}} />
               <FamilyContactButton onPress={() => {}} />
-              <Button 
-                mode="contained" 
-                icon="accessibility" 
-                onPress={() => setShowAccessibility(!showAccessibility)}
-                style={styles.accessibilityButton}
-                labelStyle={styles.buttonLabel}
-              >
-                Accessibility
-              </Button>
             </View>
           </View>
           
-          {showAccessibility && (
-            <Animatable.View animation="fadeIn" style={styles.settingsContainer}>
-              <AccessibilitySettings 
-                highContrast={highContrast}
-                largeText={largeText}
-                onToggleHighContrast={() => setHighContrast(!highContrast)}
-                onToggleLargeText={() => setLargeText(!largeText)}
-              />
-            </Animatable.View>
-          )}
+          <View style={styles.sectionContainer}>
+            <LargeText style={styles.sectionTitle}>Today's Reminders</LargeText>
+            <Card style={styles.reminderCard}>
+              <Card.Content>
+                {upcomingReminders.map((reminder, index) => (
+                  <View key={index} style={styles.reminderItem}>
+                    <MaterialCommunityIcons 
+                      name={reminder.icon} 
+                      size={24} 
+                      color={theme.colors.primary} 
+                    />
+                    <View style={styles.reminderText}>
+                      <Text variant="titleMedium">{reminder.title}</Text>
+                      <Text variant="bodyMedium">{reminder.time}</Text>
+                    </View>
+                  </View>
+                ))}
+              </Card.Content>
+            </Card>
+          </View>
           
           <View style={styles.sectionContainer}>
             <LargeText style={styles.sectionTitle}>Daily Activities</LargeText>
@@ -98,27 +103,6 @@ const DashboardScreen: React.FC = () => {
           </View>
           
           <View style={styles.sectionContainer}>
-            <LargeText style={styles.sectionTitle}>Today's Reminders</LargeText>
-            <Card style={styles.reminderCard}>
-              <Card.Content>
-                {upcomingReminders.map((reminder, index) => (
-                  <View key={index} style={styles.reminderItem}>
-                    <MaterialCommunityIcons 
-                      name={reminder.icon} 
-                      size={24} 
-                      color={theme.colors.primary} 
-                    />
-                    <View style={styles.reminderText}>
-                      <Text variant="titleMedium">{reminder.title}</Text>
-                      <Text variant="bodyMedium">{reminder.time}</Text>
-                    </View>
-                  </View>
-                ))}
-              </Card.Content>
-            </Card>
-          </View>
-          
-          <View style={styles.sectionContainer}>
             <LargeText style={styles.sectionTitle}>How are you feeling today?</LargeText>
             <ActivityPrompt prompt="Tell me about your day so far." />
           </View>
@@ -138,7 +122,13 @@ const DashboardScreen: React.FC = () => {
                 </Text>
               </Card.Content>
               <Card.Actions style={styles.cardActions}>
-                <Button mode="contained" style={styles.actionButton}>Start Conversation</Button>
+                <Button 
+                  mode="contained" 
+                  style={styles.actionButton}
+                  onPress={handleStartConversation}
+                >
+                  Start Conversation
+                </Button>
               </Card.Actions>
             </Card>
           </View>
@@ -163,22 +153,13 @@ const styles = StyleSheet.create({
   },
   topButtons: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     justifyContent: 'center',
-    maxWidth: 500,
+    alignItems: 'center',
     width: '100%',
+    maxWidth: 200,
+    alignSelf: 'center',
     gap: 12,
-  },
-  accessibilityButton: {
-    minWidth: 150,
-    borderRadius: 16,
-  },
-  buttonLabel: {
-    fontSize: 16,
-  },
-  settingsContainer: {
-    marginHorizontal: 16,
-    marginBottom: 16,
+    flexWrap: 'nowrap',
   },
   sectionContainer: {
     marginTop: 20,
