@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
-import { Text, Avatar, Button, List, TextInput } from 'react-native-paper';
-import { fetchUserProfile, fetchUserMemories, addUserMemory, updateUserMemory, deleteUserMemory } from '../../services/supabase/profile';
+import { Text, Avatar, Button, List, TextInput, Divider, Chip, Dialog, Portal, Paragraph } from 'react-native-paper';
+import { fetchUserProfile, fetchUserMemories, updateUserMemory, deleteUserMemory } from '../../services/supabase/profile';
 import { getCurrentUserId, signOut } from '../../services/supabase/auth';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../../App';
@@ -31,6 +31,8 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   const [memoriesLoading, setMemoriesLoading] = useState(true);
   const [editingMemoryId, setEditingMemoryId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [memoryToDelete, setMemoryToDelete] = useState<Memory | null>(null);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -78,8 +80,22 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleDeleteMemory = async (memory: Memory) => {
-    await deleteUserMemory(memory.id);
-    if (memory.user_id) await refreshMemories(memory.user_id);
+    setMemoryToDelete(memory);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDeleteMemory = async () => {
+    if (memoryToDelete) {
+      await deleteUserMemory(memoryToDelete.id);
+      if (memoryToDelete.user_id) await refreshMemories(memoryToDelete.user_id);
+    }
+    setShowDeleteDialog(false);
+    setMemoryToDelete(null);
+  };
+
+  const cancelDeleteMemory = () => {
+    setShowDeleteDialog(false);
+    setMemoryToDelete(null);
   };
 
   const menuItems = [
@@ -132,29 +148,48 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
             ) : memories.length === 0 ? (
               <Text>No memories found.</Text>
             ) : (
-              memories.map(memory => (
-                <View key={memory.id} style={{ backgroundColor: '#fff', borderRadius: 8, marginBottom: 8, padding: 12 }}>
-                  <Text style={{ fontWeight: 'bold', color: '#6366F1' }}>{memory.type}</Text>
-                  {editingMemoryId === memory.id ? (
-                    <>
-                      <TextInput
-                        value={editContent}
-                        onChangeText={setEditContent}
-                        style={{ backgroundColor: '#F3F4F6', marginVertical: 4 }}
-                      />
-                      <Button mode="contained" onPress={() => handleSaveMemory(memory)} style={{ marginRight: 8, marginTop: 4 }}>Save</Button>
-                      <Button mode="text" onPress={() => setEditingMemoryId(null)} style={{ marginTop: 4 }}>Cancel</Button>
-                    </>
-                  ) : (
-                    <>
-                      <Text style={{ marginVertical: 4 }}>{memory.content}</Text>
-                      <Button mode="text" onPress={() => handleEditMemory(memory)} style={{ marginRight: 8 }}>Edit</Button>
-                      <Button mode="text" onPress={() => handleDeleteMemory(memory)} color="#EF4444">Delete</Button>
-                    </>
-                  )}
-                </View>
+              memories.map((memory, idx) => (
+                <React.Fragment key={memory.id}>
+                  <View style={{ backgroundColor: '#fff', borderRadius: 8, marginBottom: 8, padding: 12 }}>
+                    <Chip style={{ alignSelf: 'flex-start', marginBottom: 4, backgroundColor: '#E0E7FF' }} textStyle={{ color: '#3730A3' }}>{memory.type}</Chip>
+                    {editingMemoryId === memory.id ? (
+                      <>
+                        <TextInput
+                          value={editContent}
+                          onChangeText={setEditContent}
+                          style={{ backgroundColor: '#F3F4F6', marginVertical: 4 }}
+                        />
+                        <View style={{ flexDirection: 'row', marginTop: 4 }}>
+                          <Button mode="contained" onPress={() => handleSaveMemory(memory)} style={{ flex: 1, marginRight: 8 }}>Save</Button>
+                          <Button mode="outlined" onPress={() => setEditingMemoryId(null)} style={{ flex: 1 }}>Cancel</Button>
+                        </View>
+                      </>
+                    ) : (
+                      <>
+                        <Text style={{ marginVertical: 4 }}>{memory.content}</Text>
+                        <View style={{ flexDirection: 'row', marginTop: 4 }}>
+                          <Button mode="text" onPress={() => handleEditMemory(memory)} style={{ flex: 1, marginRight: 8 }}>Edit</Button>
+                          <Button mode="text" onPress={() => handleDeleteMemory(memory)} textColor="#EF4444" style={{ flex: 1 }}>Delete</Button>
+                        </View>
+                      </>
+                    )}
+                  </View>
+                  {idx < memories.length - 1 && <Divider style={{ marginVertical: 4 }} />}
+                </React.Fragment>
               ))
             )}
+            <Portal>
+              <Dialog visible={showDeleteDialog} onDismiss={cancelDeleteMemory}>
+                <Dialog.Title>Delete Memory</Dialog.Title>
+                <Dialog.Content>
+                  <Paragraph>Are you sure you want to delete this memory?</Paragraph>
+                </Dialog.Content>
+                <Dialog.Actions>
+                  <Button onPress={cancelDeleteMemory}>Cancel</Button>
+                  <Button onPress={confirmDeleteMemory} textColor="#EF4444">Delete</Button>
+                </Dialog.Actions>
+              </Dialog>
+            </Portal>
           </Animatable.View>
 
           {menuItems.map((item, index) => (
