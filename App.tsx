@@ -15,6 +15,7 @@ import CognitiveAssessmentScreen from './src/screens/chatbot/CognitiveAssessment
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import SettingsScreen from './src/screens/profile/SettingsScreen';
 import FamilyDashboardScreen from './src/screens/dashboard/FamilyDashboardScreen';
+import MemoriesScreen from './src/screens/profile/MemoriesScreen';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -26,6 +27,7 @@ export type RootStackParamList = {
   CognitiveAssessment: undefined;
   Settings: undefined;
   Family: undefined;
+  Memories: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -98,6 +100,7 @@ const App = () => {
             <Stack.Screen name="CognitiveAssessment" component={CognitiveAssessmentScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
             <Stack.Screen name="Family" component={FamilyDashboardScreen} />
+            <Stack.Screen name="Memories" component={MemoriesScreen} />
           </Stack.Navigator>
         </NavigationContainer>
       </PaperProvider>

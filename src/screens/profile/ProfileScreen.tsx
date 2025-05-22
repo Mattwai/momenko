@@ -100,6 +100,11 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
 
   const menuItems = [
     {
+      title: 'AI Memories',
+      icon: 'brain',
+      onPress: () => navigation.navigate({ name: 'Memories', params: undefined }),
+    },
+    {
       title: 'Personal Information',
       icon: 'account',
       onPress: () => {},
