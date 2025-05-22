@@ -1,13 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
-import { Text, Button, TextInput, Divider, Chip, Dialog, Portal, Paragraph, IconButton, Modal } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, Dimensions } from 'react-native';
+import { Text, Button, TextInput, Divider, Chip, Dialog, Portal, Paragraph, IconButton, Surface } from 'react-native-paper';
 import { fetchUserMemories, updateUserMemory, deleteUserMemory, addUserMemory } from '../../services/supabase/profile';
 import { getCurrentUserId } from '../../services/supabase/auth';
 import * as Animatable from 'react-native-animatable';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Portal as PaperPortal } from 'react-native-paper';
-import { ScrollView as RNScrollView } from 'react-native';
-import { Platform, Dimensions } from 'react-native';
 
 interface Memory {
   id: string;
@@ -26,6 +24,8 @@ const MEMORY_TYPES = [
   'Other',
 ];
 
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+
 const MemoriesScreen: React.FC = () => {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [memoriesLoading, setMemoriesLoading] = useState(true);
@@ -34,7 +34,7 @@ const MemoriesScreen: React.FC = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [memoryToDelete, setMemoryToDelete] = useState<Memory | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
-  const [addModalVisible, setAddModalVisible] = useState(false);
+  const [addSheetVisible, setAddSheetVisible] = useState(false);
   const [newMemoryType, setNewMemoryType] = useState(MEMORY_TYPES[0]);
   const [newMemoryContent, setNewMemoryContent] = useState('');
   const [adding, setAdding] = useState(false);
@@ -84,15 +84,17 @@ const MemoriesScreen: React.FC = () => {
     setMemoryToDelete(null);
   };
 
-  const handleOpenAddModal = () => {
+  const handleOpenAddSheet = () => {
     setNewMemoryType(MEMORY_TYPES[0]);
     setNewMemoryContent('');
-    setAddModalVisible(true);
+    setAddSheetVisible(true);
   };
-  const handleCloseAddModal = () => {
-    setAddModalVisible(false);
+
+  const handleCloseAddSheet = () => {
+    setAddSheetVisible(false);
     setNewMemoryContent('');
   };
+
   const handleAddMemory = async () => {
     if (!userId || !newMemoryContent.trim()) return;
     setAdding(true);
@@ -102,12 +104,12 @@ const MemoriesScreen: React.FC = () => {
     });
     await refreshMemories(userId);
     setAdding(false);
-    setAddModalVisible(false);
+    setAddSheetVisible(false);
     setNewMemoryContent('');
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F3F4F6' }} edges={["top", "left", "right"]}>
+    <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
         <Animatable.View animation="fadeInUp" delay={200}>
           <Text style={styles.sectionHeader} accessibilityRole="header">AI Memories</Text>
@@ -118,7 +120,7 @@ const MemoriesScreen: React.FC = () => {
           ) : (
             memories.map((memory, idx) => (
               <React.Fragment key={memory.id}>
-                <View style={styles.memoryCard} accessible accessibilityLabel={`Memory: ${memory.type}, ${memory.content}`}> 
+                <Surface style={styles.memoryCard} elevation={2}>
                   <Chip style={styles.memoryChip} textStyle={styles.memoryChipText}>{memory.type}</Chip>
                   {editingMemoryId === memory.id ? (
                     <>
@@ -130,8 +132,8 @@ const MemoriesScreen: React.FC = () => {
                         autoFocus
                       />
                       <View style={styles.memoryActionsRow}>
-                        <Button mode="contained" onPress={() => handleSaveMemory(memory)} style={styles.saveButton} labelStyle={{ fontSize: 18 }}>Save</Button>
-                        <Button mode="outlined" onPress={() => setEditingMemoryId(null)} style={styles.cancelButton} labelStyle={{ fontSize: 18 }}>Cancel</Button>
+                        <Button mode="contained" onPress={() => handleSaveMemory(memory)} style={styles.saveButton} labelStyle={styles.buttonLabel}>Save</Button>
+                        <Button mode="outlined" onPress={() => setEditingMemoryId(null)} style={styles.cancelButton} labelStyle={styles.buttonLabel}>Cancel</Button>
                       </View>
                     </>
                   ) : (
@@ -143,7 +145,7 @@ const MemoriesScreen: React.FC = () => {
                       </View>
                     </>
                   )}
-                </View>
+                </Surface>
                 {idx < memories.length - 1 && <Divider style={styles.memoryDivider} />}
               </React.Fragment>
             ))
@@ -162,58 +164,98 @@ const MemoriesScreen: React.FC = () => {
           </Portal>
         </Animatable.View>
       </ScrollView>
+
       <View style={styles.fabContainer} pointerEvents="box-none">
         <Button
           mode="contained"
           icon="plus"
           style={styles.fab}
           labelStyle={styles.fabLabel}
-          onPress={handleOpenAddModal}
+          onPress={handleOpenAddSheet}
           accessibilityLabel="Add Memory"
         >
           Add Memory
         </Button>
       </View>
+
       <PaperPortal>
-        <Modal visible={addModalVisible} onDismiss={handleCloseAddModal} contentContainerStyle={styles.addModalContainer}>
-          <RNScrollView contentContainerStyle={styles.addModalScrollContent} showsVerticalScrollIndicator={false}>
-            <Text style={styles.addModalTitle}>Add New Memory</Text>
-            <View style={styles.memoryTypeRow}>
-              {MEMORY_TYPES.map(type => (
-                <Chip
-                  key={type}
-                  selected={newMemoryType === type}
-                  onPress={() => setNewMemoryType(type)}
-                  style={[styles.memoryTypeChip, newMemoryType === type && styles.memoryTypeChipSelected]}
-                  textStyle={styles.memoryTypeChipText}
-                  accessibilityLabel={`Select memory type: ${type}`}
+        <Animatable.View
+          animation={addSheetVisible ? 'slideInUp' : 'slideOutDown'}
+          duration={300}
+          style={[
+            styles.bottomSheet,
+            { height: addSheetVisible ? SCREEN_HEIGHT * 0.7 : 0 }
+          ]}
+        >
+          <Surface style={styles.bottomSheetContent} elevation={4}>
+            <View style={styles.bottomSheetHeader}>
+              <Text style={styles.bottomSheetTitle}>Add New Memory</Text>
+              <IconButton
+                icon="close"
+                size={24}
+                onPress={handleCloseAddSheet}
+                accessibilityLabel="Close add memory sheet"
+              />
+            </View>
+            <ScrollView style={styles.bottomSheetScroll} contentContainerStyle={styles.bottomSheetScrollContent}>
+              <View style={styles.memoryTypeRow}>
+                {MEMORY_TYPES.map(type => (
+                  <Chip
+                    key={type}
+                    selected={newMemoryType === type}
+                    onPress={() => setNewMemoryType(type)}
+                    style={[styles.memoryTypeChip, newMemoryType === type && styles.memoryTypeChipSelected]}
+                    textStyle={styles.memoryTypeChipText}
+                    accessibilityLabel={`Select memory type: ${type}`}
+                  >
+                    {type}
+                  </Chip>
+                ))}
+              </View>
+              <TextInput
+                value={newMemoryContent}
+                onChangeText={setNewMemoryContent}
+                style={styles.memoryInput}
+                placeholder="Enter memory details..."
+                accessibilityLabel="Memory content input"
+                multiline
+                numberOfLines={3}
+                autoFocus
+              />
+              <View style={styles.memoryActionsRow}>
+                <Button
+                  mode="contained"
+                  onPress={handleAddMemory}
+                  loading={adding}
+                  disabled={adding || !newMemoryContent.trim()}
+                  style={styles.saveButton}
+                  labelStyle={styles.buttonLabel}
                 >
-                  {type}
-                </Chip>
-              ))}
-            </View>
-            <TextInput
-              value={newMemoryContent}
-              onChangeText={setNewMemoryContent}
-              style={styles.memoryInput}
-              placeholder="Enter memory details..."
-              accessibilityLabel="Memory content input"
-              multiline
-              numberOfLines={3}
-              autoFocus
-            />
-            <View style={styles.memoryActionsRow}>
-              <Button mode="contained" onPress={handleAddMemory} loading={adding} disabled={adding || !newMemoryContent.trim()} style={styles.saveButton} labelStyle={{ fontSize: 18 }}>Save</Button>
-              <Button mode="outlined" onPress={handleCloseAddModal} disabled={adding} style={styles.cancelButton} labelStyle={{ fontSize: 18 }}>Cancel</Button>
-            </View>
-          </RNScrollView>
-        </Modal>
+                  Save
+                </Button>
+                <Button
+                  mode="outlined"
+                  onPress={handleCloseAddSheet}
+                  disabled={adding}
+                  style={styles.cancelButton}
+                  labelStyle={styles.buttonLabel}
+                >
+                  Cancel
+                </Button>
+              </View>
+            </ScrollView>
+          </Surface>
+        </Animatable.View>
       </PaperPortal>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#F3F4F6',
+  },
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
@@ -237,11 +279,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 24,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
   },
   memoryChip: {
     alignSelf: 'flex-start',
@@ -283,9 +320,6 @@ const styles = StyleSheet.create({
   memoryDivider: {
     marginVertical: 8,
   },
-  addButton: {
-    // removed, replaced by fab
-  },
   fabContainer: {
     position: 'absolute',
     left: 0,
@@ -317,30 +351,38 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginLeft: 8,
   },
-  addModalContainer: {
+  bottomSheet: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'transparent',
+    zIndex: 1000,
+  },
+  bottomSheetContent: {
     backgroundColor: 'white',
-    marginHorizontal: 0,
-    borderRadius: 24,
-    padding: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    maxHeight: '90%',
-    width: Dimensions.get('window').width - 32,
-    alignSelf: 'center',
-    overflow: 'hidden',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    height: '100%',
   },
-  addModalScrollContent: {
-    padding: 24,
+  bottomSheetHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 320,
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
-  addModalTitle: {
-    fontSize: 28,
+  bottomSheetTitle: {
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#6366F1',
-    marginBottom: 16,
-    textAlign: 'center',
+  },
+  bottomSheetScroll: {
+    flex: 1,
+  },
+  bottomSheetScrollContent: {
+    padding: 24,
   },
   memoryTypeRow: {
     flexDirection: 'row',
@@ -382,6 +424,9 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     flex: 1,
+  },
+  buttonLabel: {
+    fontSize: 18,
   },
 });
 
