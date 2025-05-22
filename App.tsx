@@ -32,6 +32,18 @@ export type RootStackParamList = {
 
 const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
+const ProfileStack = createStackNavigator();
+
+function ProfileStackScreen() {
+  return (
+    <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
+      <ProfileStack.Screen name="Profile" component={ProfileScreen} />
+      <ProfileStack.Screen name="Memories" component={MemoriesScreen} />
+      <ProfileStack.Screen name="Settings" component={SettingsScreen} />
+      <ProfileStack.Screen name="Family" component={FamilyDashboardScreen} />
+    </ProfileStack.Navigator>
+  );
+}
 
 function MainTabs() {
   return (
@@ -47,14 +59,14 @@ function MainTabs() {
           let iconName = '';
           if (route.name === 'Dashboard') iconName = 'view-dashboard-outline';
           else if (route.name === 'Chatbot') iconName = 'robot-outline';
-          else if (route.name === 'Profile') iconName = 'account-circle-outline';
+          else if (route.name === 'ProfileTab') iconName = 'account-circle-outline';
           return <Icon name={iconName} color={color} size={focused ? 30 : 25} />;
         },
       })}
     >
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
       <Tab.Screen name="Chatbot" component={ChatbotScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="ProfileTab" component={ProfileStackScreen} options={{ title: 'Profile' }} />
     </Tab.Navigator>
   );
 }
@@ -98,9 +110,6 @@ const App = () => {
             />
             <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
             <Stack.Screen name="CognitiveAssessment" component={CognitiveAssessmentScreen} />
-            <Stack.Screen name="Settings" component={SettingsScreen} />
-            <Stack.Screen name="Family" component={FamilyDashboardScreen} />
-            <Stack.Screen name="Memories" component={MemoriesScreen} />
           </Stack.Navigator>
         </NavigationContainer>
       </PaperProvider>
