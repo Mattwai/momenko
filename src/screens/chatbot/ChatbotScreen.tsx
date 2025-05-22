@@ -1,11 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
-import { Button } from 'react-native-paper';
-import * as Speech from 'expo-speech';
+import { Button, Text } from 'react-native-paper';
 import * as Animatable from 'react-native-animatable';
-import LargeText from '../../components/ui/LargeText';
-import VoiceInputIndicator from '../../components/ui/VoiceInputIndicator';
-import RepeatButton from '../../components/ui/RepeatButton';
 import ProgressIndicator from '../../components/ui/ProgressIndicator';
 import ActivityPrompt from '../../components/ui/ActivityPrompt';
 import PersonalizedGreeting from '../../components/ui/PersonalizedGreeting';
@@ -13,10 +9,6 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../../App';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import AIService from '../../services/ai/AIService';
-import { getCurrentUserId } from '../../services/supabase/auth';
-
-declare function setTimeout(handler: (...args: unknown[]) => void, timeout?: number, ...args: unknown[]): number;
 
 interface Message {
   id: string;
@@ -26,67 +18,18 @@ interface Message {
 
 const ChatbotScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [listening, setListening] = useState(false);
-  const [thinking, setThinking] = useState(false);
-  const [lastBotMessage, setLastBotMessage] = useState('');
+  const [messages] = useState<Message[]>([]);
+  const [thinking] = useState(false);
   const userName = 'Alex'; // Simulated user name
   const activityPrompt = 'What is your favorite childhood memory?'; // Simulated prompt
-  const [userId, setUserId] = useState<string | null>(null);
 
-  useEffect(() => {
-    getCurrentUserId().then(setUserId);
-  }, []);
-
-  const handleSend = async (text: string) => {
-    if (!text.trim() || !userId) return;
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      text,
-      isUser: true,
-    };
-    setMessages(prev => [...prev, newMessage]);
-    setThinking(true);
-    const aiText = await AIService.generatePersonalizedResponse(userId, text);
-    const aiResponse: Message = {
-      id: (Date.now() + 1).toString(),
-      text: aiText,
-      isUser: false,
-    };
-    setMessages(prev => [...prev, aiResponse]);
-    setLastBotMessage(aiText);
-    setThinking(false);
-    Speech.speak(aiText, { language: 'en' });
-  };
-
-  // Placeholder for voice input
   const handleTalk = () => {
-    setListening(true);
-    setTimeout(() => {
-      setListening(false);
-      handleSend('Hello, chatbot! (voice input placeholder)');
-    }, 1800);
+    navigation.navigate('ChatbotCall');
   };
 
-  const handleRepeat = () => {
-    if (lastBotMessage) {
-      Speech.speak(lastBotMessage, { language: 'en' });
-    }
-  };
-
-  return (
-    <SafeAreaView style={styles.container} edges={["top","left","right"]}>
-      <Button mode="outlined" onPress={() => navigation.navigate('CognitiveAssessment')} style={{ margin: 16 }}>
-        Start Cognitive Assessment
-      </Button>
-      <PersonalizedGreeting name={userName} />
-      <ActivityPrompt prompt={activityPrompt} />
-      <View style={styles.topButtons}>
-        {/* Remove EmergencyContactButton and FamilyContactButton from the topButtons section */}
-      </View>
-      <VoiceInputIndicator active={listening} />
-      <ProgressIndicator visible={thinking} />
-      <ScrollView style={styles.messagesContainer} contentContainerStyle={styles.messagesContent}>
+  const renderChatView = () => (
+    <>
+      <ScrollView style={styles.messagesContainer} contentContainerStyle={styles.messagesContent} accessibilityLabel="Chat transcript">
         {messages.map((msg, index) => (
           <Animatable.View
             key={msg.id}
@@ -97,22 +40,34 @@ const ChatbotScreen = () => {
               msg.isUser ? styles.userMessage : styles.aiMessage,
             ]}
           >
-            <LargeText> {msg.text} </LargeText>
+            <Text style={[styles.messageText, { fontSize: 26, color: msg.isUser ? '#fff' : '#111827' }]}>{msg.text}</Text>
           </Animatable.View>
         ))}
       </ScrollView>
       <View style={styles.talkButtonContainer}>
         <Button
           mode="contained"
-          icon="microphone"
+          icon="phone"
           onPress={handleTalk}
           style={styles.talkButton}
-          labelStyle={{ fontSize: 22 }}
+          labelStyle={{ fontSize: 32 }}
+          accessibilityLabel="Start call"
         >
-          Talk
+          Call
         </Button>
-        <RepeatButton onPress={handleRepeat} />
       </View>
+    </>
+  );
+
+  return (
+    <SafeAreaView style={styles.container} edges={["top","left","right"]}>
+      <Button mode="outlined" onPress={() => navigation.navigate('CognitiveAssessment')} style={{ margin: 16 }} labelStyle={{ fontSize: 22 }}>
+        Start Cognitive Assessment
+      </Button>
+      <PersonalizedGreeting name={userName} />
+      <ActivityPrompt prompt={activityPrompt} />
+      <ProgressIndicator visible={thinking} />
+      {renderChatView()}
     </SafeAreaView>
   );
 };
@@ -121,7 +76,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
-    justifyContent: 'flex-end',
   },
   topButtons: {
     flexDirection: 'row',
@@ -137,30 +91,32 @@ const styles = StyleSheet.create({
   },
   messageBubble: {
     maxWidth: '80%',
-    padding: 12,
-    borderRadius: 16,
-    marginBottom: 8,
+    padding: 18,
+    borderRadius: 20,
+    marginBottom: 12,
   },
   userMessage: {
     alignSelf: 'flex-end',
     backgroundColor: '#6366F1',
-    color: '#fff',
   },
   aiMessage: {
     alignSelf: 'flex-start',
     backgroundColor: '#F3F4F6',
+  },
+  messageText: {
     color: '#111827',
+    fontSize: 22,
   },
   talkButtonContainer: {
-    padding: 24,
+    padding: 32,
     backgroundColor: 'white',
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
     alignItems: 'center',
   },
   talkButton: {
-    width: 180,
-    borderRadius: 32,
+    width: 220,
+    borderRadius: 40,
     backgroundColor: '#6366F1',
     marginBottom: 8,
   },

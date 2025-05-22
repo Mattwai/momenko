@@ -16,11 +16,13 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import SettingsScreen from './src/screens/profile/SettingsScreen';
 import FamilyDashboardScreen from './src/screens/dashboard/FamilyDashboardScreen';
 import MemoriesScreen from './src/screens/profile/MemoriesScreen';
+import ChatbotCallScreen from './src/screens/chatbot/ChatbotCallScreen';
 
 export type RootStackParamList = {
   Login: undefined;
   Dashboard: undefined;
   Chatbot: undefined;
+  ChatbotCall: undefined;
   Register: undefined;
   Profile: undefined;
   Main: { screen?: string } | undefined;
@@ -110,6 +112,7 @@ const App = () => {
             />
             <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
             <Stack.Screen name="CognitiveAssessment" component={CognitiveAssessmentScreen} />
+            <Stack.Screen name="ChatbotCall" component={ChatbotCallScreen} options={{ headerShown: false }} />
           </Stack.Navigator>
         </NavigationContainer>
       </PaperProvider>
