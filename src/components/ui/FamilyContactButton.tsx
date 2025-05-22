@@ -3,26 +3,45 @@ import { TouchableOpacity, StyleSheet } from 'react-native';
 import { Text } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../../../App';
 
-const FamilyContactButton = ({ onPress }: { onPress: () => void }) => (
-  <TouchableOpacity
-    style={styles.touchable}
-    onPress={onPress}
-    accessibilityLabel="Contact Family"
-    accessibilityRole="button"
-    activeOpacity={0.85}
-  >
-    <LinearGradient
-      colors={["#3B82F6", "#60A5FA"]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.button}
+type FamilyContactButtonProps = {
+  onPress?: () => void;
+};
+
+const FamilyContactButton = ({ onPress }: FamilyContactButtonProps) => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  
+  const handlePress = () => {
+    if (onPress) {
+      onPress();
+    } else {
+      navigation.navigate('FamilyContacts');
+    }
+  };
+
+  return (
+    <TouchableOpacity
+      style={styles.touchable}
+      onPress={handlePress}
+      accessibilityLabel="Contact Family"
+      accessibilityRole="button"
+      activeOpacity={0.85}
     >
-      <Icon name="account-group" size={32} color="#fff" style={styles.icon} />
-      <Text style={styles.text}>Contact Family</Text>
-    </LinearGradient>
-  </TouchableOpacity>
-);
+      <LinearGradient
+        colors={["#3B82F6", "#60A5FA"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.button}
+      >
+        <Icon name="account-group" size={32} color="#fff" style={styles.icon} />
+        <Text style={styles.text}>Contact Family</Text>
+      </LinearGradient>
+    </TouchableOpacity>
+  );
+};
 
 const styles = StyleSheet.create({
   touchable: {

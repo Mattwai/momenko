@@ -37,7 +37,12 @@ export async function fetchFamilyConnections(userId: string) {
     .order('created_at', { ascending: true });
 }
 
-export async function addFamilyConnection(userId: string, connection: { name: string; relation: string; contact_info?: string }) {
+export async function addFamilyConnection(userId: string, connection: { 
+  name: string; 
+  relation: string; 
+  contact_info?: string;
+  is_emergency?: boolean;
+}) {
   return supabase
     .from('family_connections')
     .insert([{ user_id: userId, ...connection }]);

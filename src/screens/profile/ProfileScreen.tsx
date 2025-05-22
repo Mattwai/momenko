@@ -57,6 +57,16 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       onPress: () => navigation.navigate('PersonalInformation'),
     },
     {
+      title: 'Emergency Contacts',
+      icon: 'phone-alert',
+      onPress: () => navigation.navigate('EmergencyContacts'),
+    },
+    {
+      title: 'Family Contacts',
+      icon: 'account-group',
+      onPress: () => navigation.navigate('FamilyContacts'),
+    },
+    {
       title: 'Settings',
       icon: 'cog',
       onPress: () => navigation.navigate('Settings'),

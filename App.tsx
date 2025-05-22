@@ -18,6 +18,8 @@ import FamilyDashboardScreen from './src/screens/dashboard/FamilyDashboardScreen
 import MemoriesScreen from './src/screens/profile/MemoriesScreen';
 import ChatbotCallScreen from './src/screens/chatbot/ChatbotCallScreen';
 import PersonalInformationScreen from './src/screens/profile/PersonalInformationScreen';
+import EmergencyContactsScreen from './src/screens/profile/EmergencyContactsScreen';
+import FamilyContactsScreen from './src/screens/profile/FamilyContactsScreen';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -32,6 +34,8 @@ export type RootStackParamList = {
   Family: undefined;
   Memories: undefined;
   PersonalInformation: undefined;
+  EmergencyContacts: undefined;
+  FamilyContacts: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -47,80 +51,83 @@ function ProfileStackScreen() {
       <ProfileStack.Screen name="Settings" component={SettingsScreen} />
       <ProfileStack.Screen name="Family" component={FamilyDashboardScreen} />
       <ProfileStack.Screen name="PersonalInformation" component={PersonalInformationScreen} />
+      <ProfileStack.Screen name="EmergencyContacts" component={EmergencyContactsScreen} />
+      <ProfileStack.Screen name="FamilyContacts" component={FamilyContactsScreen} />
     </ProfileStack.Navigator>
   );
 }
 
-function MainTabs() {
+function MainTabNavigator() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: theme.colors.text,
-        tabBarStyle: { backgroundColor: theme.colors.surface, height: 96 },
-        tabBarLabelStyle: { fontSize: 14, fontWeight: 'bold', paddingBottom: 8 },
-        tabBarItemStyle: { paddingVertical: 8 },
-        tabBarIcon: ({ color, focused }) => {
-          let iconName = '';
-          if (route.name === 'Dashboard') iconName = 'view-dashboard-outline';
-          else if (route.name === 'Chatbot') iconName = 'robot-outline';
-          else if (route.name === 'ProfileTab') iconName = 'account-circle-outline';
-          return <Icon name={iconName} color={color} size={focused ? 30 : 25} />;
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName;
+
+          if (route.name === 'Dashboard') {
+            iconName = focused ? 'view-dashboard' : 'view-dashboard-outline';
+          } else if (route.name === 'Chatbot') {
+            iconName = focused ? 'chat' : 'chat-outline';
+          } else if (route.name === 'ProfileStack') {
+            iconName = focused ? 'account-circle' : 'account-circle-outline';
+          }
+
+          return <Icon name={iconName as string} size={size} color={color} />;
         },
+        tabBarActiveTintColor: '#6366F1',
+        tabBarInactiveTintColor: 'gray',
+        tabBarLabelStyle: { fontSize: 16, marginBottom: 8 },
+        tabBarStyle: { 
+          height: 80,
+          paddingBottom: 20,
+          borderTopWidth: 0,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.05,
+          shadowRadius: 4,
+          elevation: 4,
+        },
+        headerShown: false,
       })}
     >
-      <Tab.Screen name="Dashboard" component={DashboardScreen} />
-      <Tab.Screen name="Chatbot" component={ChatbotScreen} />
-      <Tab.Screen name="ProfileTab" component={ProfileStackScreen} options={{ title: 'Profile' }} />
+      <Tab.Screen 
+        name="Dashboard" 
+        component={DashboardScreen} 
+        options={{
+          tabBarLabel: 'Home'
+        }}
+      />
+      <Tab.Screen 
+        name="Chatbot" 
+        component={ChatbotScreen} 
+        options={{
+          tabBarLabel: 'Chatbot'
+        }}
+      />
+      <Tab.Screen 
+        name="ProfileStack" 
+        component={ProfileStackScreen} 
+        options={{
+          tabBarLabel: 'Profile'
+        }}
+      />
     </Tab.Navigator>
   );
 }
 
-const App = () => {
+export default function App() {
   return (
     <SafeAreaProvider>
       <PaperProvider theme={theme}>
         <NavigationContainer>
-          <Stack.Navigator
-            initialRouteName="Login"
-            screenOptions={{
-              headerStyle: {
-                backgroundColor: theme.colors.primary,
-              },
-              headerTintColor: '#FFFFFF',
-              headerTitleStyle: {
-                fontWeight: 'bold',
-              },
-              cardStyle: { backgroundColor: theme.colors.background },
-              cardStyleInterpolator: ({ current: { progress } }) => ({
-                cardStyle: {
-                  opacity: progress,
-                },
-              }),
-            }}
-          >
-            <Stack.Screen 
-              name="Login" 
-              component={LoginScreen}
-              options={{
-                headerShown: false,
-              }}
-            />
-            <Stack.Screen 
-              name="Register" 
-              component={RegisterScreen}
-              options={{
-                headerShown: false,
-              }}
-            />
-            <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
-            <Stack.Screen name="ChatbotCall" component={ChatbotCallScreen} options={{ headerShown: false }} />
+          <Stack.Navigator initialRouteName="Login" screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Register" component={RegisterScreen} />
+            <Stack.Screen name="Main" component={MainTabNavigator} />
+            <Stack.Screen name="ChatbotCall" component={ChatbotCallScreen} />
           </Stack.Navigator>
         </NavigationContainer>
       </PaperProvider>
     </SafeAreaProvider>
   );
-};
-
-export default App; 
+} 

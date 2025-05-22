@@ -18,9 +18,13 @@ const PersonalInformationScreen: React.FC<Props> = ({ navigation }) => {
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [editNameVisible, setEditNameVisible] = useState(false);
+  const [editPhoneVisible, setEditPhoneVisible] = useState(false);
   const [newName, setNewName] = useState('');
+  const [newPhone, setNewPhone] = useState('');
   const [savingName, setSavingName] = useState(false);
+  const [savingPhone, setSavingPhone] = useState(false);
   const [errorName, setErrorName] = useState('');
+  const [errorPhone, setErrorPhone] = useState('');
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -65,6 +69,35 @@ const PersonalInformationScreen: React.FC<Props> = ({ navigation }) => {
     setSavingName(false);
   };
 
+  const handleOpenEditPhone = () => {
+    setNewPhone(phoneNumber);
+    setEditPhoneVisible(true);
+    setErrorPhone('');
+  };
+  const handleCloseEditPhone = () => {
+    setEditPhoneVisible(false);
+    setErrorPhone('');
+  };
+  const handleSavePhone = async () => {
+    if (!newPhone.trim()) {
+      setErrorPhone('Phone number cannot be empty');
+      return;
+    }
+    setSavingPhone(true);
+    setErrorPhone('');
+    const uid = await getCurrentUserId();
+    if (uid) {
+      const { error } = await updateUserProfile(uid, { phone_number: newPhone.trim() });
+      if (!error) {
+        setPhoneNumber(newPhone.trim());
+        setEditPhoneVisible(false);
+      } else {
+        setErrorPhone('Failed to update phone number. Please try again.');
+      }
+    }
+    setSavingPhone(false);
+  };
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <View style={styles.backArrowContainer}>
@@ -98,6 +131,15 @@ const PersonalInformationScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.infoRow}>
             <Text style={styles.label}>Phone Number</Text>
             <Text style={styles.value}>{phoneNumber || 'Not set'}</Text>
+            <Button
+              mode="contained"
+              onPress={handleOpenEditPhone}
+              style={styles.editButton}
+              labelStyle={styles.editButtonLabel}
+              accessibilityLabel="Edit Phone Number"
+            >
+              Edit Phone Number
+            </Button>
           </View>
         </View>
       </View>
@@ -121,6 +163,29 @@ const PersonalInformationScreen: React.FC<Props> = ({ navigation }) => {
           <Dialog.Actions>
             <Button onPress={handleCloseEditName} labelStyle={{ fontSize: 20 }}>Cancel</Button>
             <Button onPress={handleSaveName} loading={savingName} disabled={savingName} labelStyle={{ fontSize: 20 }}>Save</Button>
+          </Dialog.Actions>
+        </Dialog>
+        
+        <Dialog visible={editPhoneVisible} onDismiss={handleCloseEditPhone}>
+          <Dialog.Title style={{ fontSize: 28, color: '#6366F1', textAlign: 'center' }}>Edit Phone Number</Dialog.Title>
+          <Dialog.Content>
+            <TextInput
+              label="Phone Number"
+              value={newPhone}
+              onChangeText={setNewPhone}
+              style={{ fontSize: 22, backgroundColor: '#F3F4F6', borderRadius: 12, marginBottom: 8 }}
+              accessibilityLabel="Phone Number Input"
+              autoFocus
+              returnKeyType="done"
+              keyboardType="phone-pad"
+              onSubmitEditing={handleSavePhone}
+              error={!!errorPhone}
+            />
+            {!!errorPhone && <Text style={{ color: '#EF4444', fontSize: 18, marginTop: 4 }}>{errorPhone}</Text>}
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={handleCloseEditPhone} labelStyle={{ fontSize: 20 }}>Cancel</Button>
+            <Button onPress={handleSavePhone} loading={savingPhone} disabled={savingPhone} labelStyle={{ fontSize: 20 }}>Save</Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
