@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, Avatar, Button, List } from 'react-native-paper';
-import { fetchUserProfile } from '../../services/supabase/profile';
 import { getCurrentUserId, signOut } from '../../services/supabase/auth';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../../App';
 import * as Animatable from 'react-native-animatable';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { fetchUserProfile } from '../../services/supabase/profile';
 
 type ProfileScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Profile'>;
 
@@ -54,7 +54,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
     {
       title: 'Personal Information',
       icon: 'account',
-      onPress: () => {},
+      onPress: () => navigation.navigate('PersonalInformation'),
     },
     {
       title: 'Settings',

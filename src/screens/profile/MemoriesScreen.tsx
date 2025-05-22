@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView, Dimensions } from 'react-native';
-import { Text, Button, TextInput, Divider, Chip, Dialog, Portal, Paragraph, IconButton, Surface } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, Dimensions, TouchableOpacity } from 'react-native';
+import { Text, Button, TextInput, Divider, Chip, Dialog, Portal, Paragraph, Surface, IconButton } from 'react-native-paper';
 import { fetchUserMemories, updateUserMemory, deleteUserMemory, addUserMemory } from '../../services/supabase/profile';
 import { getCurrentUserId } from '../../services/supabase/auth';
 import * as Animatable from 'react-native-animatable';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Portal as PaperPortal } from 'react-native-paper';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../../../App';
 
 interface Memory {
   id: string;
@@ -26,7 +29,13 @@ const MEMORY_TYPES = [
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const MemoriesScreen: React.FC = () => {
+type MemoriesScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Memories'>;
+
+interface Props {
+  navigation: MemoriesScreenNavigationProp;
+}
+
+const MemoriesScreen: React.FC<Props> = ({ navigation }) => {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [memoriesLoading, setMemoriesLoading] = useState(true);
   const [editingMemoryId, setEditingMemoryId] = useState<string | null>(null);
@@ -110,6 +119,16 @@ const MemoriesScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
+      <View style={styles.backArrowContainer}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+          accessibilityLabel="Back to Profile"
+          accessibilityRole="button"
+        >
+          <Icon name="arrow-left" size={32} color="#6366F1" />
+        </TouchableOpacity>
+      </View>
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
         <Animatable.View animation="fadeInUp" delay={200}>
           <Text style={styles.sectionHeader} accessibilityRole="header">AI Memories</Text>
@@ -427,6 +446,18 @@ const styles = StyleSheet.create({
   },
   buttonLabel: {
     fontSize: 18,
+  },
+  backArrowContainer: {
+    width: '100%',
+    alignItems: 'flex-start',
+    marginTop: 8,
+    marginLeft: 8,
+    marginBottom: 0,
+    zIndex: 10,
+  },
+  backButton: {
+    backgroundColor: 'transparent',
+    padding: 4,
   },
 });
 

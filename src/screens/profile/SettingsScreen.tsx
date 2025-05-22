@@ -1,19 +1,34 @@
 import React, { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Text, Button } from 'react-native-paper';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { Text } from 'react-native-paper';
 import AccessibilitySettings from '../../components/ui/AccessibilitySettings';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../../App';
-import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
-const SettingsScreen: React.FC = () => {
+type SettingsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Settings'>;
+
+interface Props {
+  navigation: SettingsScreenNavigationProp;
+}
+
+const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   const [highContrast, setHighContrast] = useState(false);
   const [largeText, setLargeText] = useState(true);
-  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
   return (
     <SafeAreaView style={styles.container} edges={["top","left","right"]}>
+      <View style={styles.backArrowContainer}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+          accessibilityLabel="Back to Profile"
+          accessibilityRole="button"
+        >
+          <Icon name="arrow-left" size={32} color="#6366F1" />
+        </TouchableOpacity>
+      </View>
       <View style={styles.header}>
         <Text style={styles.title}>Settings</Text>
       </View>
@@ -43,10 +58,17 @@ const styles = StyleSheet.create({
     color: '#6366F1',
     marginTop: 16,
   },
+  backArrowContainer: {
+    width: '100%',
+    alignItems: 'flex-start',
+    marginTop: 8,
+    marginLeft: 8,
+    marginBottom: 0,
+    zIndex: 10,
+  },
   backButton: {
-    marginTop: 32,
-    borderRadius: 8,
-    alignSelf: 'center',
+    backgroundColor: 'transparent',
+    padding: 4,
   },
 });
 

@@ -17,6 +17,7 @@ import SettingsScreen from './src/screens/profile/SettingsScreen';
 import FamilyDashboardScreen from './src/screens/dashboard/FamilyDashboardScreen';
 import MemoriesScreen from './src/screens/profile/MemoriesScreen';
 import ChatbotCallScreen from './src/screens/chatbot/ChatbotCallScreen';
+import PersonalInformationScreen from './src/screens/profile/PersonalInformationScreen';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -30,6 +31,7 @@ export type RootStackParamList = {
   Settings: undefined;
   Family: undefined;
   Memories: undefined;
+  PersonalInformation: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -44,6 +46,7 @@ function ProfileStackScreen() {
       <ProfileStack.Screen name="Memories" component={MemoriesScreen} />
       <ProfileStack.Screen name="Settings" component={SettingsScreen} />
       <ProfileStack.Screen name="Family" component={FamilyDashboardScreen} />
+      <ProfileStack.Screen name="PersonalInformation" component={PersonalInformationScreen} />
     </ProfileStack.Navigator>
   );
 }

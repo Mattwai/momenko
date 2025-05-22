@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View, TouchableOpacity } from 'react-native';
 import LargeText from '../../components/ui/LargeText';
 import ActivityPrompt from '../../components/ui/ActivityPrompt';
 import ProgressIndicator from '../../components/ui/ProgressIndicator';
@@ -8,6 +8,9 @@ import VoiceInputIndicator from '../../components/ui/VoiceInputIndicator';
 import { Button } from 'react-native-paper';
 import * as Speech from 'expo-speech';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../../../App';
 
 declare function setTimeout(handler: (...args: unknown[]) => void, timeout?: number, ...args: unknown[]): number;
 
@@ -19,7 +22,13 @@ const questions = [
   { prompt: 'Please spell the word "WORLD" backwards.', answer: '' },
 ];
 
-const CognitiveAssessmentScreen = () => {
+type CognitiveAssessmentScreenNavigationProp = StackNavigationProp<RootStackParamList, 'CognitiveAssessment'>;
+
+interface Props {
+  navigation: CognitiveAssessmentScreenNavigationProp;
+}
+
+const CognitiveAssessmentScreen: React.FC<Props> = ({ navigation }) => {
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState<string[]>(Array(questions.length).fill(''));
   const [listening, setListening] = useState(false);
@@ -59,26 +68,50 @@ const CognitiveAssessmentScreen = () => {
   if (showResult) {
     return (
       <SafeAreaView style={styles.container} edges={["top","left","right"]}>
-        <LargeText>Assessment Complete</LargeText>
-        <ActivityPrompt prompt={`Thank you! Your answers have been recorded.`} />
-        <Button mode="contained" onPress={handleRestart} style={styles.button}>Restart</Button>
+        <View style={styles.backArrowContainer}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+            accessibilityLabel="Back to Profile"
+            accessibilityRole="button"
+          >
+            <Icon name="arrow-left" size={32} color="#6366F1" />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.contentContainer}>
+          <LargeText>Assessment Complete</LargeText>
+          <ActivityPrompt prompt={`Thank you! Your answers have been recorded.`} />
+          <Button mode="contained" onPress={handleRestart} style={styles.button}>Restart</Button>
+        </View>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container} edges={["top","left","right"]}>
-      <LargeText>Cognitive Assessment</LargeText>
-      <ProgressIndicator visible={false} />
-      <ActivityPrompt prompt={questions[current].prompt} />
-      <VoiceInputIndicator active={listening} />
-      <RepeatButton onPress={handleRepeat} />
-      <Button mode="contained" onPress={handleVoiceInput} style={styles.button} disabled={listening}>
-        Answer by Voice
-      </Button>
-      <Button mode="text" onPress={() => handleAnswer('Skipped')} style={styles.button} disabled={listening}>
-        Skip
-      </Button>
+      <View style={styles.backArrowContainer}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+          accessibilityLabel="Back to Profile"
+          accessibilityRole="button"
+        >
+          <Icon name="arrow-left" size={32} color="#6366F1" />
+        </TouchableOpacity>
+      </View>
+      <View style={styles.contentContainer}>
+        <LargeText>Cognitive Assessment</LargeText>
+        <ProgressIndicator visible={false} />
+        <ActivityPrompt prompt={questions[current].prompt} />
+        <VoiceInputIndicator active={listening} />
+        <RepeatButton onPress={handleRepeat} />
+        <Button mode="contained" onPress={handleVoiceInput} style={styles.button} disabled={listening}>
+          Answer by Voice
+        </Button>
+        <Button mode="text" onPress={() => handleAnswer('Skipped')} style={styles.button} disabled={listening}>
+          Skip
+        </Button>
+      </View>
     </SafeAreaView>
   );
 };
@@ -86,15 +119,32 @@ const CognitiveAssessmentScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 16,
     backgroundColor: '#F9FAFB',
-    padding: 16,
   },
   button: {
     marginTop: 16,
     width: 220,
     borderRadius: 24,
+  },
+  backArrowContainer: {
+    width: '100%',
+    alignItems: 'flex-start',
+    marginTop: 8,
+    marginLeft: 8,
+    marginBottom: 0,
+    zIndex: 10,
+  },
+  backButton: {
+    backgroundColor: 'transparent',
+    padding: 4,
+  },
+  contentContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 16,
   },
 });
 
