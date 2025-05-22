@@ -40,6 +40,7 @@ function ProfileStackScreen() {
   return (
     <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
       <ProfileStack.Screen name="Profile" component={ProfileScreen} />
+      <ProfileStack.Screen name="CognitiveAssessment" component={CognitiveAssessmentScreen} />
       <ProfileStack.Screen name="Memories" component={MemoriesScreen} />
       <ProfileStack.Screen name="Settings" component={SettingsScreen} />
       <ProfileStack.Screen name="Family" component={FamilyDashboardScreen} />
@@ -111,7 +112,6 @@ const App = () => {
               }}
             />
             <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
-            <Stack.Screen name="CognitiveAssessment" component={CognitiveAssessmentScreen} />
             <Stack.Screen name="ChatbotCall" component={ChatbotCallScreen} options={{ headerShown: false }} />
           </Stack.Navigator>
         </NavigationContainer>

@@ -23,9 +23,6 @@ const SettingsScreen: React.FC = () => {
         onToggleHighContrast={() => setHighContrast(h => !h)}
         onToggleLargeText={() => setLargeText(l => !l)}
       />
-      <Button mode="outlined" onPress={() => navigation.goBack()} style={styles.backButton}>
-        Back to Profile
-      </Button>
     </SafeAreaView>
   );
 };

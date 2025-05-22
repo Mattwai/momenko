@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
-import { Button, Text } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { Text } from 'react-native-paper';
 import * as Animatable from 'react-native-animatable';
 import ProgressIndicator from '../../components/ui/ProgressIndicator';
-import ActivityPrompt from '../../components/ui/ActivityPrompt';
-import PersonalizedGreeting from '../../components/ui/PersonalizedGreeting';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../../App';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 interface Message {
   id: string;
@@ -20,17 +19,16 @@ const ChatbotScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [messages] = useState<Message[]>([]);
   const [thinking] = useState(false);
-  const userName = 'Alex'; // Simulated user name
-  const activityPrompt = 'What is your favorite childhood memory?'; // Simulated prompt
 
   const handleTalk = () => {
     navigation.navigate('ChatbotCall');
   };
 
   const renderChatView = () => (
-    <>
+    <View style={styles.chatCard}>
+      <Text style={styles.sectionHeader} accessibilityRole="header">Conversations</Text>
       <ScrollView style={styles.messagesContainer} contentContainerStyle={styles.messagesContent} accessibilityLabel="Chat transcript">
-        {messages.map((msg, index) => (
+        {[...messages].sort((a, b) => Number(b.id) - Number(a.id)).map((msg, index) => (
           <Animatable.View
             key={msg.id}
             animation="fadeInUp"
@@ -40,34 +38,32 @@ const ChatbotScreen = () => {
               msg.isUser ? styles.userMessage : styles.aiMessage,
             ]}
           >
-            <Text style={[styles.messageText, { fontSize: 26, color: msg.isUser ? '#fff' : '#111827' }]}>{msg.text}</Text>
+            <Text style={[styles.messageText, { fontSize: 28, color: msg.isUser ? '#fff' : '#111827', lineHeight: 36 }]}>{msg.text}</Text>
           </Animatable.View>
         ))}
       </ScrollView>
-      <View style={styles.talkButtonContainer}>
-        <Button
-          mode="contained"
-          icon="phone"
-          onPress={handleTalk}
-          style={styles.talkButton}
-          labelStyle={{ fontSize: 32 }}
-          accessibilityLabel="Start call"
-        >
-          Call
-        </Button>
-      </View>
-    </>
+    </View>
   );
 
   return (
     <SafeAreaView style={styles.container} edges={["top","left","right"]}>
-      <Button mode="outlined" onPress={() => navigation.navigate('CognitiveAssessment')} style={{ margin: 16 }} labelStyle={{ fontSize: 22 }}>
-        Start Cognitive Assessment
-      </Button>
-      <PersonalizedGreeting name={userName} />
-      <ActivityPrompt prompt={activityPrompt} />
+      <View style={styles.headerSection}>
+        <Text style={styles.greetingText}>I'm here to help you today.</Text>
+      </View>
       <ProgressIndicator visible={thinking} />
       {renderChatView()}
+      <View style={styles.fabContainer} pointerEvents="box-none">
+        <TouchableOpacity
+          onPress={handleTalk}
+          style={[styles.fab, { width: 96, height: 96, borderRadius: 48, backgroundColor: '#6366F1' }]}
+          accessible
+          accessibilityRole="button"
+          accessibilityLabel="Start call"
+          activeOpacity={0.7}
+        >
+          <Icon name="phone" size={54} color="#fff" style={{ alignSelf: 'center' }} />
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 };
@@ -75,7 +71,7 @@ const ChatbotScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#fff',
   },
   topButtons: {
     flexDirection: 'row',
@@ -94,6 +90,11 @@ const styles = StyleSheet.create({
     padding: 18,
     borderRadius: 20,
     marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
   },
   userMessage: {
     alignSelf: 'flex-end',
@@ -107,18 +108,74 @@ const styles = StyleSheet.create({
     color: '#111827',
     fontSize: 22,
   },
-  talkButtonContainer: {
-    padding: 32,
-    backgroundColor: 'white',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+  fabContainer: {
+    position: 'absolute',
+    bottom: 32,
+    left: 0,
+    right: 0,
     alignItems: 'center',
+    zIndex: 10,
+    pointerEvents: 'box-none',
+    padding: 0,
+    margin: 0,
   },
-  talkButton: {
-    width: 220,
+  fab: {
+    width: 80,
+    height: 80,
     borderRadius: 40,
     backgroundColor: '#6366F1',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    marginLeft: 0,
+    marginRight: 0,
+  },
+  sectionHeader: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    color: '#3730A3',
+    textAlign: 'left',
+    backgroundColor: '#E0E7FF',
+    borderRadius: 16,
     marginBottom: 8,
+    marginTop: 8,
+  },
+  headerSection: {
+    paddingTop: 32,
+    paddingBottom: 16,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+  },
+  greetingText: {
+    fontSize: 26,
+    color: '#6366F1',
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 0,
+  },
+  chatCard: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 24,
+    marginHorizontal: 16,
+    marginBottom: 24,
+    paddingTop: 8,
+    paddingHorizontal: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  fabContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ImageBackground } from 'react-native';
-import { Button, Text } from 'react-native-paper';
+import { View, StyleSheet, ImageBackground, TouchableOpacity } from 'react-native';
+import { Text } from 'react-native-paper';
 import * as Animatable from 'react-native-animatable';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
@@ -59,39 +59,33 @@ const ChatbotCallScreen = () => {
                 }}
                 duration={1000}
                 iterationCount="infinite"
-                style={[styles.wave, { marginLeft: i * 16 }]}
+                style={styles.wave}
               />
             ))}
           </View>
         )}
         {/* Call controls */}
         <View style={styles.callControls}>
-          <Button
-            mode="contained"
-            icon={({ color }) => (
-              <Icon name={listening ? 'microphone-off' : 'microphone'} size={54} color={listening ? color : '#fff'} />
-            )}
+          <TouchableOpacity
             onPress={() => setListening(!listening)}
             style={[styles.callButton, listening ? styles.muteButton : styles.unmuteButton]}
-            contentStyle={styles.iconButtonContent}
+            accessible
+            accessibilityRole="button"
             accessibilityLabel={listening ? 'Mute microphone' : 'Unmute microphone'}
-            labelStyle={{ fontSize: 22 }}
+            activeOpacity={0.7}
           >
-            {listening ? 'Mute' : 'Unmute'}
-          </Button>
-          <Button
-            mode="contained"
-            icon={({ color }) => (
-              <Icon name="phone-off" size={54} color={color} />
-            )}
+            <Icon name={listening ? 'microphone-off' : 'microphone'} size={54} color={listening ? '#fff' : '#fff'} style={{ alignSelf: 'center' }} />
+          </TouchableOpacity>
+          <TouchableOpacity
             onPress={handleEndCall}
             style={[styles.callButton, styles.endCallButton]}
-            contentStyle={styles.iconButtonContent}
+            accessible
+            accessibilityRole="button"
             accessibilityLabel="Hang up call"
-            labelStyle={{ fontSize: 28 }}
+            activeOpacity={0.7}
           >
-            Hang Up
-          </Button>
+            <Icon name="phone-off" size={54} color="#fff" style={{ alignSelf: 'center' }} />
+          </TouchableOpacity>
         </View>
       </ImageBackground>
     </SafeAreaView>
@@ -145,8 +139,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 48,
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '80%',
+    justifyContent: 'center',
+    width: '100%',
     alignSelf: 'center',
     zIndex: 2,
   },
@@ -156,7 +150,7 @@ const styles = StyleSheet.create({
     borderRadius: 48,
     justifyContent: 'center',
     alignItems: 'center',
-    marginHorizontal: 32,
+    marginHorizontal: 48,
     elevation: 6,
   },
   muteButton: {
