@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView, Alert, Dimensions } from 'react-native';
-import { Text, Button, TextInput, Dialog, Portal, Divider, FAB, Surface, IconButton } from 'react-native-paper';
+import { Text, Button, TextInput, Divider, FAB, Surface, IconButton } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { fetchEmergencyContacts, addEmergencyContact, deleteEmergencyContact } from '../../services/supabase/emergencyContacts';
 import { getCurrentUserId } from '../../services/supabase/auth';
@@ -8,6 +8,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../../App';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Animatable from 'react-native-animatable';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -26,11 +27,8 @@ interface EmergencyContact {
   created_at: string;
 }
 
-declare function setTimeout(handler: (...args: unknown[]) => void, timeout?: number, ...args: unknown[]): number;
-
 const EmergencyContactsScreen: React.FC<Props> = ({ navigation }) => {
   const [contacts, setContacts] = useState<EmergencyContact[]>([]);
-  const [loading, setLoading] = useState(true);
   const [addSheetVisible, setAddSheetVisible] = useState(false);
   const [newName, setNewName] = useState('');
   const [newRole, setNewRole] = useState('');
@@ -44,7 +42,6 @@ const EmergencyContactsScreen: React.FC<Props> = ({ navigation }) => {
   }, []);
 
   const loadContacts = async () => {
-    setLoading(true);
     const uid = await getCurrentUserId();
     if (uid) {
       const { data, error } = await fetchEmergencyContacts(uid);
@@ -52,7 +49,6 @@ const EmergencyContactsScreen: React.FC<Props> = ({ navigation }) => {
         setContacts(data);
       }
     }
-    setLoading(false);
   };
 
   const handleAddContact = async () => {
@@ -213,14 +209,20 @@ const EmergencyContactsScreen: React.FC<Props> = ({ navigation }) => {
               accessibilityLabel="Close add contact sheet"
             />
           </View>
-          <ScrollView style={styles.bottomSheetScroll} contentContainerStyle={styles.bottomSheetScrollContent}>
+          <KeyboardAwareScrollView
+            style={styles.bottomSheetScroll}
+            contentContainerStyle={styles.bottomSheetScrollContent}
+            enableOnAndroid
+            extraScrollHeight={24}
+            keyboardShouldPersistTaps="handled"
+          >
             <TextInput
               label="Name"
               value={newName}
               onChangeText={setNewName}
               style={styles.input}
               accessibilityLabel="Contact Name Input"
-              autoFocus
+              autoFocus={addSheetVisible}
             />
             <TextInput
               label="Role (e.g. GP, Caregiver, Emergency Services)"
@@ -258,7 +260,7 @@ const EmergencyContactsScreen: React.FC<Props> = ({ navigation }) => {
                 Save
               </Button>
             </View>
-          </ScrollView>
+          </KeyboardAwareScrollView>
         </Surface>
       </Animatable.View>
     </SafeAreaView>

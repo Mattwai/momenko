@@ -8,6 +8,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../../App';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Animatable from 'react-native-animatable';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -23,8 +24,6 @@ interface FamilyContact {
   relation: string;
   contact_info: string;
 }
-
-declare function setTimeout(handler: (...args: unknown[]) => void, timeout?: number, ...args: unknown[]): number;
 
 const FamilyContactsScreen: React.FC<Props> = ({ navigation }) => {
   const [contacts, setContacts] = useState<FamilyContact[]>([]);
@@ -46,7 +45,7 @@ const FamilyContactsScreen: React.FC<Props> = ({ navigation }) => {
       if (!error && data) {
         // Filter for regular family contacts (not emergency contacts)
         const familyContacts = data.filter(
-          (contact: Record<string, any>) => !contact.is_emergency
+          (contact: unknown) => (contact as { is_emergency?: boolean }).is_emergency === false
         ) as FamilyContact[];
         setContacts(familyContacts);
       }
@@ -191,14 +190,20 @@ const FamilyContactsScreen: React.FC<Props> = ({ navigation }) => {
               accessibilityLabel="Close add contact sheet"
             />
           </View>
-          <ScrollView style={styles.bottomSheetScroll} contentContainerStyle={styles.bottomSheetScrollContent}>
+          <KeyboardAwareScrollView
+            style={styles.bottomSheetScroll}
+            contentContainerStyle={styles.bottomSheetScrollContent}
+            enableOnAndroid
+            extraScrollHeight={24}
+            keyboardShouldPersistTaps="handled"
+          >
             <TextInput
               label="Name"
               value={newName}
               onChangeText={setNewName}
               style={styles.input}
               accessibilityLabel="Contact Name Input"
-              autoFocus
+              autoFocus={addSheetVisible}
             />
             <TextInput
               label="Relationship (optional)"
@@ -229,7 +234,7 @@ const FamilyContactsScreen: React.FC<Props> = ({ navigation }) => {
                 Save
               </Button>
             </View>
-          </ScrollView>
+          </KeyboardAwareScrollView>
         </Surface>
       </Animatable.View>
     </SafeAreaView>

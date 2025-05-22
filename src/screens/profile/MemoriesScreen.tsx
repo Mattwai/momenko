@@ -239,7 +239,6 @@ const MemoriesScreen: React.FC<Props> = ({ navigation }) => {
                 accessibilityLabel="Memory content input"
                 multiline
                 numberOfLines={3}
-                autoFocus
               />
               <View style={styles.memoryActionsRow}>
                 <Button

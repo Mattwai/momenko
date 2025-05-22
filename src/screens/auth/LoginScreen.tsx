@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { Button, Text } from 'react-native-paper';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../../App';
@@ -34,7 +35,12 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <GradientBackground>
-      <View style={styles.container}>
+      <KeyboardAwareScrollView
+        contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
+        enableOnAndroid
+        extraScrollHeight={24}
+        keyboardShouldPersistTaps="handled"
+      >
         <Animatable.View animation="fadeInDown" duration={1000}>
           <Text variant="displaySmall" style={styles.title}>
             Welcome Back
@@ -82,7 +88,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             </Button>
           </Animatable.View>
         </View>
-      </View>
+      </KeyboardAwareScrollView>
     </GradientBackground>
   );
 };
