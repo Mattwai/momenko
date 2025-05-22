@@ -126,77 +126,29 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   }
 
   return (
-    <SafeAreaView style={{flex: 1}} edges={["top","left","right"]}>
+    <SafeAreaView style={{flex: 1, backgroundColor: '#F3F4F6'}} edges={["top","left","right"]}>
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
         <Animatable.View animation="fadeInDown" duration={1000}>
-          <View style={styles.header}>
+          <View style={styles.profileCard}>
             <Avatar.Image
-              size={100}
-              source={{ uri: 'https://via.placeholder.com/100' }}
+              size={120}
+              source={{ uri: 'https://via.placeholder.com/120' }}
               style={styles.avatar}
             />
-            <Text variant="headlineSmall" style={styles.name}>
-              {fullName}
+            <Text variant="headlineLarge" style={styles.greeting}>
+              Welcome, {fullName || 'Friend'}
             </Text>
-            <Text variant="bodyLarge" style={styles.email}>
-              {phoneNumber}
+            <Text variant="titleMedium" style={styles.phoneLabel}>
+              Phone
+            </Text>
+            <Text variant="titleLarge" style={styles.phoneNumber}>
+              {phoneNumber || 'Not set'}
             </Text>
           </View>
         </Animatable.View>
 
-        <View style={styles.content}>
-          {/* Memory Viewer/Editor */}
-          <Animatable.View animation="fadeInUp" delay={200}>
-            <Text variant="titleMedium" style={{ marginBottom: 8, fontWeight: 'bold' }}>AI Memories</Text>
-            {memoriesLoading ? (
-              <Text>Loading memories...</Text>
-            ) : memories.length === 0 ? (
-              <Text>No memories found.</Text>
-            ) : (
-              memories.map((memory, idx) => (
-                <React.Fragment key={memory.id}>
-                  <View style={{ backgroundColor: '#fff', borderRadius: 8, marginBottom: 8, padding: 12 }}>
-                    <Chip style={{ alignSelf: 'flex-start', marginBottom: 4, backgroundColor: '#E0E7FF' }} textStyle={{ color: '#3730A3' }}>{memory.type}</Chip>
-                    {editingMemoryId === memory.id ? (
-                      <>
-                        <TextInput
-                          value={editContent}
-                          onChangeText={setEditContent}
-                          style={{ backgroundColor: '#F3F4F6', marginVertical: 4 }}
-                        />
-                        <View style={{ flexDirection: 'row', marginTop: 4 }}>
-                          <Button mode="contained" onPress={() => handleSaveMemory(memory)} style={{ flex: 1, marginRight: 8 }}>Save</Button>
-                          <Button mode="outlined" onPress={() => setEditingMemoryId(null)} style={{ flex: 1 }}>Cancel</Button>
-                        </View>
-                      </>
-                    ) : (
-                      <>
-                        <Text style={{ marginVertical: 4 }}>{memory.content}</Text>
-                        <View style={{ flexDirection: 'row', marginTop: 4 }}>
-                          <Button mode="text" onPress={() => handleEditMemory(memory)} style={{ flex: 1, marginRight: 8 }}>Edit</Button>
-                          <Button mode="text" onPress={() => handleDeleteMemory(memory)} textColor="#EF4444" style={{ flex: 1 }}>Delete</Button>
-                        </View>
-                      </>
-                    )}
-                  </View>
-                  {idx < memories.length - 1 && <Divider style={{ marginVertical: 4 }} />}
-                </React.Fragment>
-              ))
-            )}
-            <Portal>
-              <Dialog visible={showDeleteDialog} onDismiss={cancelDeleteMemory}>
-                <Dialog.Title>Delete Memory</Dialog.Title>
-                <Dialog.Content>
-                  <Paragraph>Are you sure you want to delete this memory?</Paragraph>
-                </Dialog.Content>
-                <Dialog.Actions>
-                  <Button onPress={cancelDeleteMemory}>Cancel</Button>
-                  <Button onPress={confirmDeleteMemory} textColor="#EF4444">Delete</Button>
-                </Dialog.Actions>
-              </Dialog>
-            </Portal>
-          </Animatable.View>
-
+        <View style={styles.section}>
+          <Text variant="titleLarge" style={styles.sectionHeader}>Your Menu</Text>
           {menuItems.map((item, index) => (
             <Animatable.View
               key={item.title}
@@ -204,36 +156,40 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
               delay={index * 200}
             >
               <List.Item
-                title={item.title}
-                left={props => <List.Icon {...props} icon={item.icon} />}
-                right={props => <List.Icon {...props} icon="chevron-right" />}
+                title={<Text style={styles.menuText}>{item.title}</Text>}
+                left={props => <List.Icon {...props} icon={item.icon} color="#6366F1" />}
+                right={props => <List.Icon {...props} icon="chevron-right" color="#6366F1" />}
                 onPress={item.onPress}
                 style={styles.listItem}
               />
             </Animatable.View>
           ))}
+        </View>
 
-          <Animatable.View animation="fadeInUp" delay={500}>
-            <Button
-              mode="contained"
-              style={{ marginBottom: 16, backgroundColor: '#8B5CF6', borderRadius: 12 }}
-              labelStyle={{ fontSize: 18 }}
-              onPress={() => navigation.navigate('Family')}
-              accessibilityLabel="Go to Family Dashboard"
-            >
-              Family Dashboard
-            </Button>
-          </Animatable.View>
+        <View style={styles.section}>
+          <Button
+            mode="contained"
+            icon="account-group"
+            style={styles.familyButton}
+            labelStyle={{ fontSize: 20 }}
+            onPress={() => navigation.navigate('Family')}
+            accessibilityLabel="Go to Family Dashboard"
+          >
+            Family Dashboard
+          </Button>
+        </View>
 
-          <Animatable.View animation="fadeInUp" delay={600}>
-            <Button
-              mode="outlined"
-              onPress={handleLogout}
-              style={styles.logoutButton}
-            >
-              Log Out
-            </Button>
-          </Animatable.View>
+        <View style={styles.section}>
+          <Button
+            mode="outlined"
+            icon="logout"
+            onPress={handleLogout}
+            style={styles.logoutButton}
+            labelStyle={{ fontSize: 20 }}
+            accessibilityLabel="Log Out"
+          >
+            Log Out
+          </Button>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -248,31 +204,89 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
   },
-  header: {
+  profileCard: {
     alignItems: 'center',
-    padding: 24,
+    padding: 32,
     backgroundColor: 'white',
+    borderRadius: 24,
     marginTop: 32,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  greeting: {
+    marginTop: 16,
+    fontWeight: 'bold',
+    color: '#6366F1',
+    fontSize: 28,
+    textAlign: 'center',
+  },
+  phoneLabel: {
+    marginTop: 12,
+    color: '#6B7280',
+    fontSize: 18,
+  },
+  phoneNumber: {
+    fontSize: 22,
+    color: '#1F2937',
+    marginBottom: 5,
+  },
+  settingsButton: {
+    marginTop: 16,
+    borderRadius: 12,
+    backgroundColor: '#8B5CF6',
+    width: 180,
+    alignSelf: 'center',
+  },
+  section: {
+    marginTop: 24,
+    marginBottom: 8,
+    paddingHorizontal: 8,
+  },
+  sectionHeader: {
+    fontWeight: 'bold',
+    color: '#6366F1',
+    marginBottom: 12,
+    fontSize: 22,
+  },
+  menuText: {
+    fontSize: 20,
+    color: '#1F2937',
   },
   avatar: {
     marginBottom: 16,
   },
-  name: {
-    marginBottom: 4,
-  },
-  email: {
-    opacity: 0.7,
-  },
-  content: {
-    padding: 16,
-  },
   listItem: {
     backgroundColor: 'white',
-    marginBottom: 8,
-    borderRadius: 8,
+    marginBottom: 12,
+    borderRadius: 12,
+    minHeight: 64,
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  familyButton: {
+    backgroundColor: '#6366F1',
+    borderRadius: 16,
+    marginVertical: 8,
+    width: '100%',
+    alignSelf: 'center',
+    paddingVertical: 12,
   },
   logoutButton: {
     marginTop: 24,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#EF4444',
+    width: '100%',
+    alignSelf: 'center',
+    paddingVertical: 12,
   },
 });
 
