@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, Button, TextInput, Divider, Chip, Dialog, Portal, Paragraph, IconButton, Modal } from 'react-native-paper';
-import { fetchUserMemories, updateUserMemory, deleteUserMemory } from '../../services/supabase/profile';
+import { fetchUserMemories, updateUserMemory, deleteUserMemory, addUserMemory } from '../../services/supabase/profile';
 import { getCurrentUserId } from '../../services/supabase/auth';
 import * as Animatable from 'react-native-animatable';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Portal as PaperPortal } from 'react-native-paper';
+import { ScrollView as RNScrollView } from 'react-native';
+import { Platform, Dimensions } from 'react-native';
 
 interface Memory {
   id: string;
@@ -94,18 +96,10 @@ const MemoriesScreen: React.FC = () => {
   const handleAddMemory = async () => {
     if (!userId || !newMemoryContent.trim()) return;
     setAdding(true);
-    // Assume addUserMemory is available in supabase/profile
-    if (typeof fetchUserMemories === 'function') {
-      await fetch('/api/addUserMemory', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: userId,
-          type: newMemoryType,
-          content: newMemoryContent.trim(),
-        }),
-      });
-    }
+    await addUserMemory(userId, {
+      type: newMemoryType,
+      content: newMemoryContent.trim(),
+    });
     await refreshMemories(userId);
     setAdding(false);
     setAddModalVisible(false);
@@ -168,47 +162,51 @@ const MemoriesScreen: React.FC = () => {
           </Portal>
         </Animatable.View>
       </ScrollView>
-      <Button
-        mode="contained"
-        icon="plus"
-        style={styles.addButton}
-        labelStyle={{ fontSize: 28 }}
-        onPress={handleOpenAddModal}
-        accessibilityLabel="Add Memory"
-      >
-        Add Memory
-      </Button>
+      <View style={styles.fabContainer} pointerEvents="box-none">
+        <Button
+          mode="contained"
+          icon="plus"
+          style={styles.fab}
+          labelStyle={styles.fabLabel}
+          onPress={handleOpenAddModal}
+          accessibilityLabel="Add Memory"
+        >
+          Add Memory
+        </Button>
+      </View>
       <PaperPortal>
         <Modal visible={addModalVisible} onDismiss={handleCloseAddModal} contentContainerStyle={styles.addModalContainer}>
-          <Text style={styles.addModalTitle}>Add New Memory</Text>
-          <View style={styles.memoryTypeRow}>
-            {MEMORY_TYPES.map(type => (
-              <Chip
-                key={type}
-                selected={newMemoryType === type}
-                onPress={() => setNewMemoryType(type)}
-                style={[styles.memoryTypeChip, newMemoryType === type && styles.memoryTypeChipSelected]}
-                textStyle={styles.memoryTypeChipText}
-                accessibilityLabel={`Select memory type: ${type}`}
-              >
-                {type}
-              </Chip>
-            ))}
-          </View>
-          <TextInput
-            value={newMemoryContent}
-            onChangeText={setNewMemoryContent}
-            style={styles.memoryInput}
-            placeholder="Enter memory details..."
-            accessibilityLabel="Memory content input"
-            multiline
-            numberOfLines={3}
-            autoFocus
-          />
-          <View style={styles.memoryActionsRow}>
-            <Button mode="contained" onPress={handleAddMemory} loading={adding} disabled={adding || !newMemoryContent.trim()} style={styles.saveButton} labelStyle={{ fontSize: 18 }}>Save</Button>
-            <Button mode="outlined" onPress={handleCloseAddModal} disabled={adding} style={styles.cancelButton} labelStyle={{ fontSize: 18 }}>Cancel</Button>
-          </View>
+          <RNScrollView contentContainerStyle={styles.addModalScrollContent} showsVerticalScrollIndicator={false}>
+            <Text style={styles.addModalTitle}>Add New Memory</Text>
+            <View style={styles.memoryTypeRow}>
+              {MEMORY_TYPES.map(type => (
+                <Chip
+                  key={type}
+                  selected={newMemoryType === type}
+                  onPress={() => setNewMemoryType(type)}
+                  style={[styles.memoryTypeChip, newMemoryType === type && styles.memoryTypeChipSelected]}
+                  textStyle={styles.memoryTypeChipText}
+                  accessibilityLabel={`Select memory type: ${type}`}
+                >
+                  {type}
+                </Chip>
+              ))}
+            </View>
+            <TextInput
+              value={newMemoryContent}
+              onChangeText={setNewMemoryContent}
+              style={styles.memoryInput}
+              placeholder="Enter memory details..."
+              accessibilityLabel="Memory content input"
+              multiline
+              numberOfLines={3}
+              autoFocus
+            />
+            <View style={styles.memoryActionsRow}>
+              <Button mode="contained" onPress={handleAddMemory} loading={adding} disabled={adding || !newMemoryContent.trim()} style={styles.saveButton} labelStyle={{ fontSize: 18 }}>Save</Button>
+              <Button mode="outlined" onPress={handleCloseAddModal} disabled={adding} style={styles.cancelButton} labelStyle={{ fontSize: 18 }}>Cancel</Button>
+            </View>
+          </RNScrollView>
         </Modal>
       </PaperPortal>
     </SafeAreaView>
@@ -223,12 +221,13 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
     paddingBottom: 120,
+    paddingTop: 8,
   },
   sectionHeader: {
     fontSize: 32,
     fontWeight: 'bold',
     color: '#6366F1',
-    marginTop: 16,
+    marginTop: 0,
     marginBottom: 24,
     textAlign: 'center',
     letterSpacing: 1,
@@ -285,23 +284,56 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
   addButton: {
+    // removed, replaced by fab
+  },
+  fabContainer: {
     position: 'absolute',
-    right: 24,
+    left: 0,
+    right: 0,
     bottom: 32,
+    alignItems: 'center',
+    zIndex: 20,
+    pointerEvents: 'box-none',
+  },
+  fab: {
     borderRadius: 32,
     backgroundColor: '#6366F1',
     paddingVertical: 16,
-    paddingHorizontal: 32,
-    elevation: 4,
-    zIndex: 10,
+    paddingHorizontal: 36,
+    elevation: 6,
+    minWidth: 180,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+  },
+  fabLabel: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
+    letterSpacing: 1,
+    textAlign: 'center',
+    marginLeft: 8,
   },
   addModalContainer: {
     backgroundColor: 'white',
-    marginHorizontal: 24,
+    marginHorizontal: 0,
     borderRadius: 24,
+    padding: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    maxHeight: '90%',
+    width: Dimensions.get('window').width - 32,
+    alignSelf: 'center',
+    overflow: 'hidden',
+  },
+  addModalScrollContent: {
     padding: 24,
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: 320,
   },
   addModalTitle: {
     fontSize: 28,
