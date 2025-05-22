@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
-import { Text, Avatar, Button, List } from 'react-native-paper';
-import { fetchUserProfile } from '../../services/supabase/profile';
+import { Text, Avatar, Button, List, TextInput } from 'react-native-paper';
+import { fetchUserProfile, fetchUserMemories, addUserMemory } from '../../services/supabase/profile';
 import { getCurrentUserId, signOut } from '../../services/supabase/auth';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../../App';
@@ -14,10 +14,23 @@ type Props = {
   navigation: ProfileScreenNavigationProp;
 };
 
+interface Memory {
+  id: string;
+  user_id: string;
+  type: string;
+  content: string;
+  metadata?: object;
+  created_at: string;
+}
+
 const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(true);
+  const [memories, setMemories] = useState<Memory[]>([]);
+  const [memoriesLoading, setMemoriesLoading] = useState(true);
+  const [editingMemoryId, setEditingMemoryId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -29,6 +42,11 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           setFullName(data.full_name || '');
           setPhoneNumber(data.phone_number || '');
         }
+        // Fetch user memories
+        setMemoriesLoading(true);
+        const { data: mems } = await fetchUserMemories(uid);
+        setMemories(mems || []);
+        setMemoriesLoading(false);
       }
       setLoading(false);
     };
@@ -38,6 +56,24 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   const handleLogout = async () => {
     await signOut();
     navigation.replace('Login');
+  };
+
+  const handleEditMemory = (memory: Memory) => {
+    setEditingMemoryId(memory.id);
+    setEditContent(memory.content);
+  };
+
+  const handleSaveMemory = async (memory: Memory) => {
+    // For simplicity, just add a new memory and remove the old one (real app: update in DB)
+    await addUserMemory(memory.user_id, { type: memory.type, content: editContent });
+    setMemories(memories => memories.map(m => m.id === memory.id ? { ...m, content: editContent } : m));
+    setEditingMemoryId(null);
+    setEditContent('');
+  };
+
+  const handleDeleteMemory = (memory: Memory) => {
+    // For demo: just remove from UI (real app: delete from DB)
+    setMemories(memories => memories.filter(m => m.id !== memory.id));
   };
 
   const menuItems = [
@@ -82,6 +118,39 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
         </Animatable.View>
 
         <View style={styles.content}>
+          {/* Memory Viewer/Editor */}
+          <Animatable.View animation="fadeInUp" delay={200}>
+            <Text variant="titleMedium" style={{ marginBottom: 8, fontWeight: 'bold' }}>AI Memories</Text>
+            {memoriesLoading ? (
+              <Text>Loading memories...</Text>
+            ) : memories.length === 0 ? (
+              <Text>No memories found.</Text>
+            ) : (
+              memories.map(memory => (
+                <View key={memory.id} style={{ backgroundColor: '#fff', borderRadius: 8, marginBottom: 8, padding: 12 }}>
+                  <Text style={{ fontWeight: 'bold', color: '#6366F1' }}>{memory.type}</Text>
+                  {editingMemoryId === memory.id ? (
+                    <>
+                      <TextInput
+                        value={editContent}
+                        onChangeText={setEditContent}
+                        style={{ backgroundColor: '#F3F4F6', marginVertical: 4 }}
+                      />
+                      <Button mode="contained" onPress={() => handleSaveMemory(memory)} style={{ marginRight: 8, marginTop: 4 }}>Save</Button>
+                      <Button mode="text" onPress={() => setEditingMemoryId(null)} style={{ marginTop: 4 }}>Cancel</Button>
+                    </>
+                  ) : (
+                    <>
+                      <Text style={{ marginVertical: 4 }}>{memory.content}</Text>
+                      <Button mode="text" onPress={() => handleEditMemory(memory)} style={{ marginRight: 8 }}>Edit</Button>
+                      <Button mode="text" onPress={() => handleDeleteMemory(memory)} color="#EF4444">Delete</Button>
+                    </>
+                  )}
+                </View>
+              ))
+            )}
+          </Animatable.View>
+
           {menuItems.map((item, index) => (
             <Animatable.View
               key={item.title}
