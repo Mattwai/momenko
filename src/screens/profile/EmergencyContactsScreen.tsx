@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView, Alert, Dimensions } from 'react-native';
-import { Text, Button, TextInput, Divider, FAB, Surface, IconButton } from 'react-native-paper';
+import { Text, Button, TextInput, Dialog, Portal, Divider, FAB, Surface, IconButton } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { fetchFamilyConnections, addFamilyConnection } from '../../services/supabase/profile';
+import { fetchEmergencyContacts, addEmergencyContact, deleteEmergencyContact } from '../../services/supabase/emergencyContacts';
 import { getCurrentUserId } from '../../services/supabase/auth';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../../App';
@@ -20,19 +20,22 @@ type Props = {
 interface EmergencyContact {
   id: string;
   name: string;
-  relation: string;
+  role?: string;
   contact_info: string;
-  is_emergency: boolean;
+  notes?: string;
+  created_at: string;
 }
 
 declare function setTimeout(handler: (...args: unknown[]) => void, timeout?: number, ...args: unknown[]): number;
 
 const EmergencyContactsScreen: React.FC<Props> = ({ navigation }) => {
   const [contacts, setContacts] = useState<EmergencyContact[]>([]);
+  const [loading, setLoading] = useState(true);
   const [addSheetVisible, setAddSheetVisible] = useState(false);
   const [newName, setNewName] = useState('');
-  const [newRelation, setNewRelation] = useState('');
+  const [newRole, setNewRole] = useState('');
   const [newContactInfo, setNewContactInfo] = useState('');
+  const [newNotes, setNewNotes] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -41,17 +44,15 @@ const EmergencyContactsScreen: React.FC<Props> = ({ navigation }) => {
   }, []);
 
   const loadContacts = async () => {
+    setLoading(true);
     const uid = await getCurrentUserId();
     if (uid) {
-      const { data, error } = await fetchFamilyConnections(uid);
+      const { data, error } = await fetchEmergencyContacts(uid);
       if (!error && data) {
-        // Filter for emergency contacts
-        const emergencyContacts = data.filter(
-          (contact: Record<string, any>) => contact.is_emergency === true
-        ) as EmergencyContact[];
-        setContacts(emergencyContacts);
+        setContacts(data);
       }
     }
+    setLoading(false);
   };
 
   const handleAddContact = async () => {
@@ -64,13 +65,12 @@ const EmergencyContactsScreen: React.FC<Props> = ({ navigation }) => {
     setError('');
     const uid = await getCurrentUserId();
     if (uid) {
-      const connection = {
+      const { error } = await addEmergencyContact(uid, {
         name: newName.trim(),
-        relation: newRelation.trim() || '',
+        role: newRole.trim(),
         contact_info: newContactInfo.trim(),
-        is_emergency: true
-      };
-      const { error } = await addFamilyConnection(uid, connection);
+        notes: newNotes.trim(),
+      });
 
       if (!error) {
         setAddSheetVisible(false);
@@ -83,10 +83,16 @@ const EmergencyContactsScreen: React.FC<Props> = ({ navigation }) => {
     setSaving(false);
   };
 
+  const handleDeleteContact = async (contactId: string) => {
+    await deleteEmergencyContact(contactId);
+    await loadContacts();
+  };
+
   const clearForm = () => {
     setNewName('');
-    setNewRelation('');
+    setNewRole('');
     setNewContactInfo('');
+    setNewNotes('');
     setError('');
   };
 
@@ -134,13 +140,19 @@ const EmergencyContactsScreen: React.FC<Props> = ({ navigation }) => {
               </View>
               <Divider style={styles.divider} />
               <View style={styles.contactDetail}>
-                <Text style={styles.contactLabel}>Relation</Text>
-                <Text style={styles.contactValue}>{contact.relation || 'Not specified'}</Text>
+                <Text style={styles.contactLabel}>Role</Text>
+                <Text style={styles.contactValue}>{contact.role || 'Not specified'}</Text>
               </View>
               <View style={styles.contactDetail}>
                 <Text style={styles.contactLabel}>Contact Info</Text>
                 <Text style={styles.contactValue}>{contact.contact_info}</Text>
               </View>
+              {contact.notes && (
+                <View style={styles.contactDetail}>
+                  <Text style={styles.contactLabel}>Notes</Text>
+                  <Text style={styles.contactValue}>{contact.notes}</Text>
+                </View>
+              )}
               <View style={styles.contactActions}>
                 <Button
                   mode="contained"
@@ -160,6 +172,15 @@ const EmergencyContactsScreen: React.FC<Props> = ({ navigation }) => {
                 >
                   Text
                 </Button>
+                <Button
+                  mode="outlined"
+                  icon="delete"
+                  style={[styles.actionButton, { borderColor: '#EF4444', backgroundColor: '#fff' }]}
+                  labelStyle={[styles.actionButtonLabel, { color: '#EF4444' }]}
+                  onPress={() => handleDeleteContact(contact.id)}
+                >
+                  Delete
+                </Button>
               </View>
             </View>
           ))
@@ -174,13 +195,12 @@ const EmergencyContactsScreen: React.FC<Props> = ({ navigation }) => {
         accessibilityLabel="Add emergency contact"
       />
 
-      {/* Modern Bottom Sheet for Add Contact */}
       <Animatable.View
         animation={addSheetVisible ? 'slideInUp' : 'slideOutDown'}
         duration={300}
         style={[
           styles.bottomSheet,
-          { height: addSheetVisible ? SCREEN_HEIGHT * 0.6 : 0 }
+          { height: addSheetVisible ? SCREEN_HEIGHT * 0.7 : 0 }
         ]}
       >
         <Surface style={styles.bottomSheetContent} elevation={4}>
@@ -203,25 +223,32 @@ const EmergencyContactsScreen: React.FC<Props> = ({ navigation }) => {
               autoFocus
             />
             <TextInput
-              label="Relationship (optional)"
-              value={newRelation}
-              onChangeText={setNewRelation}
+              label="Role (e.g. GP, Caregiver, Emergency Services)"
+              value={newRole}
+              onChangeText={setNewRole}
               style={styles.input}
-              accessibilityLabel="Relationship Input"
+              accessibilityLabel="Role Input"
             />
             <TextInput
-              label="Phone Number"
+              label="Phone Number or Contact Info"
               value={newContactInfo}
               onChangeText={setNewContactInfo}
               style={styles.input}
               keyboardType="phone-pad"
               accessibilityLabel="Phone Number Input"
             />
+            <TextInput
+              label="Notes (optional)"
+              value={newNotes}
+              onChangeText={setNewNotes}
+              style={styles.input}
+              accessibilityLabel="Notes Input"
+            />
             {!!error && <Text style={{ color: '#EF4444', fontSize: 18, marginTop: 4 }}>{error}</Text>}
             <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 24, gap: 12 }}>
               <Button onPress={closeAddSheet} labelStyle={{ fontSize: 20 }}>Cancel</Button>
               <Button
-                onPress={handleAddContact}
+                onPress={async () => { await handleAddContact(); if (!error) closeAddSheet(); }}
                 loading={saving}
                 disabled={saving}
                 labelStyle={{ fontSize: 20 }}

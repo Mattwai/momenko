@@ -4,6 +4,7 @@ import { Button, Text } from 'react-native-paper';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../../App';
 import { signUpWithEmail } from '../../services/supabase/auth';
+import { supabase } from '../../services/supabase/supabaseClient';
 import { GradientBackground } from '../../components/ui/GradientBackground';
 import { AnimatedInput } from '../../components/ui/AnimatedInput';
 import * as Animatable from 'react-native-animatable';
@@ -29,11 +30,16 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
 
     setLoading(true);
     setError('');
-    const { error } = await signUpWithEmail(email, password);
+    const { data, error } = await signUpWithEmail(email, password);
     setLoading(false);
     if (error) {
       setError(error.message || 'Registration failed');
     } else {
+      // Insert profile row
+      const user = data?.user;
+      if (user) {
+        await supabase.rpc('insert_profile', { user_id: user.id });
+      }
       navigation.replace('Main');
     }
   };

@@ -63,12 +63,12 @@ const FamilyContactsScreen: React.FC<Props> = ({ navigation }) => {
     setError('');
     const uid = await getCurrentUserId();
     if (uid) {
-      const connection = {
+      const { error } = await addFamilyConnection(uid, {
         name: newName.trim(),
-        relation: newRelation.trim() || '',
+        relation: newRelation.trim(),
         contact_info: newContactInfo.trim(),
-      };
-      const { error } = await addFamilyConnection(uid, connection);
+        is_emergency: false
+      });
 
       if (!error) {
         setAddSheetVisible(false);
