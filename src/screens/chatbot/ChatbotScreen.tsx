@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Text } from 'react-native-paper';
 import * as Animatable from 'react-native-animatable';
@@ -8,17 +8,34 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../../App';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-
-interface Message {
-  id: string;
-  text: string;
-  isUser: boolean;
-}
+import { useChat } from '../../contexts/ChatContext';
 
 const ChatbotScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
-  const [messages] = useState<Message[]>([]);
-  const [thinking] = useState(false);
+  const { messages, isProcessing, refreshUserSession, loadMessages } = useChat();
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    if (messages.length > 0 && scrollViewRef.current) {
+      scrollViewRef.current.scrollToEnd({ animated: true });
+    }
+  }, [messages]);
+
+  // Refresh user session and load messages when the screen loads
+  useEffect(() => {
+    const initialize = async () => {
+      console.log('Initializing ChatbotScreen...');
+      try {
+        await refreshUserSession();
+        await loadMessages();
+      } catch (error) {
+        console.error('Error initializing ChatbotScreen:', error);
+      }
+    };
+
+    initialize();
+  }, []);
 
   const handleTalk = () => {
     navigation.navigate('ChatbotCall');
@@ -27,8 +44,13 @@ const ChatbotScreen = () => {
   const renderChatView = () => (
     <View style={styles.chatCard}>
       <Text style={styles.sectionHeader} accessibilityRole="header">Conversations</Text>
-      <ScrollView style={styles.messagesContainer} contentContainerStyle={styles.messagesContent} accessibilityLabel="Chat transcript">
-        {[...messages].sort((a, b) => Number(b.id) - Number(a.id)).map((msg, index) => (
+      <ScrollView 
+        ref={scrollViewRef}
+        style={styles.messagesContainer} 
+        contentContainerStyle={styles.messagesContent} 
+        accessibilityLabel="Chat transcript"
+      >
+        {messages.map((msg, index) => (
           <Animatable.View
             key={msg.id}
             animation="fadeInUp"
@@ -50,7 +72,7 @@ const ChatbotScreen = () => {
       <View style={styles.headerSection}>
         <Text style={styles.greetingText}>I'm here to help you today.</Text>
       </View>
-      <ProgressIndicator visible={thinking} />
+      <ProgressIndicator visible={isProcessing} />
       {renderChatView()}
       <View style={styles.fabContainer} pointerEvents="box-none">
         <TouchableOpacity

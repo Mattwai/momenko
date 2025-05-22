@@ -39,3 +39,6 @@ env/*
 *.tsbuildinfo
 
 app.secrets.json
+
+ios/
+android/

@@ -4,7 +4,7 @@ import { fetchUserMemories, addUserMemory } from '../supabase/profile';
 import yaml from 'js-yaml';
 
 interface MessageParam {
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'system';
   content: string;
 }
 
@@ -25,6 +25,7 @@ class AIService {
   constructor() {
     this.apiKey = AI_API_KEY;
     this.apiUrl = AI_API_URL;
+    console.log('AIService initialized with API URL:', this.apiUrl ? 'Valid URL' : 'Missing URL');
   }
 
   async generateResponse(userInput: string) {
@@ -33,6 +34,7 @@ class AIService {
       content: userInput,
     });
     try {
+      console.log('Sending request to AI API');
       const response = await axios.post(
         this.apiUrl,
         {
@@ -47,31 +49,40 @@ class AIService {
         }
       );
       const botContent = response.data.choices?.[0]?.message?.content ?? '';
+      console.log('Received AI response:', botContent.substring(0, 50) + '...');
       this.conversationHistory.push({
         role: 'assistant',
         content: botContent,
       });
       return botContent;
-    } catch {
+    } catch (error) {
+      console.error('Error calling AI API:', error);
       return 'Sorry, there was an error getting a response.';
     }
   }
 
   async generatePersonalizedResponse(userId: string, userInput: string) {
-    const { data: memories } = await fetchUserMemories(userId);
-    let memoryContext = '';
-    if (memories && memories.length > 0) {
-      memoryContext = (memories as Memory[]).map((m) => `- ${m.content}`).join('\n');
-    }
-    const systemPrompt = memoryContext
-      ? `Here are some important facts about the user. Use them to personalize your response.\n${memoryContext}`
-      : '';
-    const conversation = [
-      ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
-      ...this.conversationHistory,
-      { role: 'user', content: userInput },
-    ];
+    console.log(`Generating personalized response for user ${userId} with input: ${userInput.substring(0, 30)}...`);
     try {
+      const { data: memories } = await fetchUserMemories(userId);
+      console.log(`Retrieved ${memories?.length || 0} memories for personalization`);
+      
+      let memoryContext = '';
+      if (memories && memories.length > 0) {
+        memoryContext = (memories as Memory[]).map((m) => `- ${m.content}`).join('\n');
+      }
+      
+      const systemPrompt = memoryContext
+        ? `Here are some important facts about the user. Use them to personalize your response.\n${memoryContext}`
+        : '';
+      
+      const conversation = [
+        ...(systemPrompt ? [{ role: 'system' as const, content: systemPrompt }] : []),
+        ...this.conversationHistory,
+        { role: 'user' as const, content: userInput },
+      ];
+      
+      console.log(`Sending request to ${this.apiUrl} with ${conversation.length} messages`);
       const response = await axios.post(
         this.apiUrl,
         {
@@ -85,13 +96,25 @@ class AIService {
           },
         }
       );
+      
       const botContent = response.data.choices?.[0]?.message?.content ?? '';
+      console.log('Received AI response:', botContent.substring(0, 50) + '...');
+      
       this.conversationHistory.push({ role: 'user', content: userInput });
       this.conversationHistory.push({ role: 'assistant', content: botContent });
-      await this.extractAndStoreMemories(userId, userInput);
-      await this.extractAndStoreMemories(userId, botContent);
+      
+      // Only attempt to extract memories if we got a valid response
+      if (botContent) {
+        await this.extractAndStoreMemories(userId, userInput);
+        await this.extractAndStoreMemories(userId, botContent);
+      }
+      
       return botContent;
-    } catch {
+    } catch (error) {
+      console.error('Error generating personalized response:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('API error details:', error.response?.data);
+      }
       return 'Sorry, there was an error getting a response.';
     }
   }

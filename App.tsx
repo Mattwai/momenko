@@ -20,6 +20,7 @@ import ChatbotCallScreen from './src/screens/chatbot/ChatbotCallScreen';
 import PersonalInformationScreen from './src/screens/profile/PersonalInformationScreen';
 import EmergencyContactsScreen from './src/screens/profile/EmergencyContactsScreen';
 import FamilyContactsScreen from './src/screens/profile/FamilyContactsScreen';
+import { ChatProvider } from './src/contexts/ChatContext';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -119,14 +120,16 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <PaperProvider theme={theme}>
-        <NavigationContainer>
-          <Stack.Navigator initialRouteName="Login" screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="Login" component={LoginScreen} />
-            <Stack.Screen name="Register" component={RegisterScreen} />
-            <Stack.Screen name="Main" component={MainTabNavigator} />
-            <Stack.Screen name="ChatbotCall" component={ChatbotCallScreen} />
-          </Stack.Navigator>
-        </NavigationContainer>
+        <ChatProvider>
+          <NavigationContainer>
+            <Stack.Navigator initialRouteName="Login" screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="Login" component={LoginScreen} />
+              <Stack.Screen name="Register" component={RegisterScreen} />
+              <Stack.Screen name="Main" component={MainTabNavigator} />
+              <Stack.Screen name="ChatbotCall" component={ChatbotCallScreen} />
+            </Stack.Navigator>
+          </NavigationContainer>
+        </ChatProvider>
       </PaperProvider>
     </SafeAreaProvider>
   );

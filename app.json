@@ -13,14 +13,34 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocalNetworkUsageDescription": "This app needs access to your local network to enable voice conversations with the AI assistant",
+        "NSMicrophoneUsageDescription": "This app needs access to your microphone to enable voice conversations with the AI assistant",
+        "NSSpeechRecognitionUsageDescription": "This app uses speech recognition to convert your voice to text for the AI assistant"
+      },
+      "bundleIdentifier": "com.anonymous.momenko"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.INTERNET"
+      ],
+      "package": "com.anonymous.momenko"
     },
+    "plugins": [
+      [
+        "@react-native-voice/voice",
+        {
+          "microphonePermission": "Allow Momenko to access your microphone for voice conversations",
+          "speechRecognitionPermission": "Allow Momenko to securely recognize your speech for the AI assistant"
+        }
+      ]
+    ],
     "web": {
       "favicon": "./assets/favicon.png"
     }
