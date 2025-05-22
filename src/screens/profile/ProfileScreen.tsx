@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
-import { Text, Avatar, Button, List, TextInput, Divider, Chip, Dialog, Portal, Paragraph } from 'react-native-paper';
-import { fetchUserProfile, fetchUserMemories, updateUserMemory, deleteUserMemory } from '../../services/supabase/profile';
+import { Text, Avatar, Button, List } from 'react-native-paper';
+import { fetchUserProfile } from '../../services/supabase/profile';
 import { getCurrentUserId, signOut } from '../../services/supabase/auth';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../../App';
@@ -14,25 +14,10 @@ type Props = {
   navigation: ProfileScreenNavigationProp;
 };
 
-interface Memory {
-  id: string;
-  user_id: string;
-  type: string;
-  content: string;
-  metadata?: object;
-  created_at: string;
-}
-
 const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(true);
-  const [memories, setMemories] = useState<Memory[]>([]);
-  const [memoriesLoading, setMemoriesLoading] = useState(true);
-  const [editingMemoryId, setEditingMemoryId] = useState<string | null>(null);
-  const [editContent, setEditContent] = useState('');
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [memoryToDelete, setMemoryToDelete] = useState<Memory | null>(null);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -44,11 +29,6 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           setFullName(data.full_name || '');
           setPhoneNumber(data.phone_number || '');
         }
-        // Fetch user memories
-        setMemoriesLoading(true);
-        const { data: mems } = await fetchUserMemories(uid);
-        setMemories(mems || []);
-        setMemoriesLoading(false);
       }
       setLoading(false);
     };
@@ -58,44 +38,6 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   const handleLogout = async () => {
     await signOut();
     navigation.replace('Login');
-  };
-
-  const handleEditMemory = (memory: Memory) => {
-    setEditingMemoryId(memory.id);
-    setEditContent(memory.content);
-  };
-
-  const refreshMemories = async (userId: string) => {
-    setMemoriesLoading(true);
-    const { data: mems } = await fetchUserMemories(userId);
-    setMemories(mems || []);
-    setMemoriesLoading(false);
-  };
-
-  const handleSaveMemory = async (memory: Memory) => {
-    await updateUserMemory(memory.id, editContent);
-    if (memory.user_id) await refreshMemories(memory.user_id);
-    setEditingMemoryId(null);
-    setEditContent('');
-  };
-
-  const handleDeleteMemory = async (memory: Memory) => {
-    setMemoryToDelete(memory);
-    setShowDeleteDialog(true);
-  };
-
-  const confirmDeleteMemory = async () => {
-    if (memoryToDelete) {
-      await deleteUserMemory(memoryToDelete.id);
-      if (memoryToDelete.user_id) await refreshMemories(memoryToDelete.user_id);
-    }
-    setShowDeleteDialog(false);
-    setMemoryToDelete(null);
-  };
-
-  const cancelDeleteMemory = () => {
-    setShowDeleteDialog(false);
-    setMemoryToDelete(null);
   };
 
   const menuItems = [
