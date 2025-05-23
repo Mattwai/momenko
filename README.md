@@ -10,16 +10,25 @@ An app for elderly users with dementia that uses AI to provide cognitive stimula
 - Expo CLI (`npm install -g expo-cli`)
 - For iOS: XCode and CocoaPods
 - For Android: Android Studio with SDK tools
+- ElevenLabs API key (for natural voice synthesis)
+
+### Environment Variables
+Create a `.env` file in the root directory with the following variables:
+```bash
+AI_API_KEY=your_ai_api_key
+AI_API_URL=your_ai_api_url
+ELEVEN_LABS_API_KEY=your_elevenlabs_api_key
+```
 
 ### Installation
 1. Clone the repository
 2. Install dependencies: `yarn install`
-3. Install native dependencies: `yarn add @react-native-voice/voice react-native-tts`
+3. Install native dependencies: `yarn add @react-native-voice/voice expo-av`
 
 ## Running the App
 
 ### Development Build (Recommended for Voice Features)
-Voice recognition and text-to-speech require native modules that aren't supported in Expo Go. Use a development build instead:
+Voice recognition and natural speech synthesis require native modules that aren't supported in Expo Go. Use a development build instead:
 
 #### iOS Development Build
 ```bash
@@ -47,7 +56,7 @@ npx expo run:android
 # Start the Expo development server
 yarn start
 ```
-⚠️ Voice recognition and TTS won't work in Expo Go.
+⚠️ Voice recognition and natural speech won't work in Expo Go.
 
 ## Testing on Physical Devices
 
@@ -70,8 +79,22 @@ yarn start
 
 - The chatbot uses Supabase for message storage
 - Voice recognition uses @react-native-voice/voice 
-- Text-to-speech uses react-native-tts
+- Natural speech synthesis uses ElevenLabs API
 - The app is built with React Native and Expo
+
+## Voice Features
+
+### ElevenLabs Integration
+The app uses ElevenLabs' advanced text-to-speech API for natural and human-like voice synthesis. This provides:
+- High-quality, natural-sounding voice
+- Emotional expression and proper intonation
+- Consistent voice personality
+- Elderly-friendly speech patterns and pacing
+
+To customize the voice:
+1. Log in to your ElevenLabs account
+2. Choose or create a voice that suits your needs
+3. Update the `voiceId` in `src/services/ai/ElevenLabsService.ts`
 
 ## Troubleshooting
 
@@ -80,7 +103,8 @@ yarn start
 - Try using a development build instead of Expo Go
 - Check the console for speech recognition errors
 
-### TTS Issues
-- Verify TTS is properly initialized
-- Use available voices from `Tts.voices()` rather than hardcoded ones
-- Break long text into sentences for more reliable TTS
+### Speech Synthesis Issues
+- Verify your ElevenLabs API key is correctly set in `.env`
+- Check network connectivity
+- Monitor API usage limits
+- Look for errors in the console

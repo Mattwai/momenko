@@ -5,4 +5,5 @@ declare module '@env' {
   export const SUPABASE_ANON_KEY: string;
   export const TWILIO_ACCOUNT_SID: string;
   export const TWILIO_AUTH_TOKEN: string;
+  export const ELEVEN_LABS_API_KEY: string;
 } 

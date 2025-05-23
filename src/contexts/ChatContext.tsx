@@ -1,8 +1,9 @@
 /* global console */
 import React, { createContext, useState, useContext, useEffect, ReactNode, useRef } from 'react';
 import Voice, { SpeechResultsEvent, SpeechErrorEvent } from '@react-native-voice/voice';
-import Tts from 'react-native-tts';
 import AIService from '../services/ai/AIService';
+import ElevenLabsService from '../services/ai/ElevenLabsService';
+import AudioPlayerService from '../services/audio/AudioPlayerService';
 import { fetchChatHistory, addChatMessage } from '../services/supabase/chat';
 import { supabase } from '../services/supabase/supabaseClient';
 
@@ -35,7 +36,6 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [transcript, setTranscript] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
   
-  // Add speech timeout refs to handle cases where onSpeechEnd isn't triggered
   const speechTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastTranscriptRef = useRef('');
   const processingTranscriptRef = useRef(false);
@@ -64,64 +64,27 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  // Initialize TTS and Voice Recognition
+  // Initialize voice recognition and ElevenLabs
   useEffect(() => {
-    // Initialize TTS
-    const initTts = async () => {
+    const initServices = async () => {
       try {
-        // Initialize with default settings
-        await Tts.setDefaultLanguage('en-US');
-        
-        // Get available voices
-        const voices = await Tts.voices();
-        const availableVoices = voices.filter(v => !v.networkConnectionRequired && v.notInstalled === false);
-        
-        // Select an appropriate voice - prefer a female voice if available
-        const femaleVoice = availableVoices.find(v => 
-          v.id.includes('female') || 
-          v.id.includes('Samantha') || 
-          v.id.toLowerCase().includes('female')
-        );
-        
-        if (femaleVoice) {
-          await Tts.setDefaultVoice(femaleVoice.id);
-          console.log(`Using voice: ${femaleVoice.id}`);
-        } else if (availableVoices.length > 0) {
-          await Tts.setDefaultVoice(availableVoices[0].id);
-          console.log(`Using voice: ${availableVoices[0].id}`);
+        const initialized = await ElevenLabsService.initializeVoice();
+        if (!initialized) {
+          console.error('Failed to initialize ElevenLabs');
         }
-        
-        // Set slower rate for elderly users
-        await Tts.setDefaultRate(0.48);
-        await Tts.setDefaultPitch(1.0);
-      } catch (err) {
-        console.error('TTS initialization error:', err);
+      } catch (error) {
+        console.error('Error initializing services:', error);
       }
     };
+
+    initServices();
     
-    initTts();
-    
-    // Use only supported TTS event types
-    Tts.addEventListener('tts-start', () => {
-      console.log('TTS started speaking');
-      setIsSpeaking(true);
-    });
-    Tts.addEventListener('tts-finish', () => {
-      console.log('TTS finished speaking');
-      setIsSpeaking(false);
-    });
-    Tts.addEventListener('tts-cancel', () => {
-      console.log('TTS speech canceled');
-      setIsSpeaking(false);
-    });
-    
-    // Set up Voice Recognition events with better timeout handling
+    // Set up Voice Recognition events
     Voice.onSpeechStart = () => {
       console.log('Speech started');
       setIsListening(true);
       recognitionAttempts.current = 0;
       
-      // Clear any existing timeout
       if (speechTimeoutRef.current) {
         clearTimeout(speechTimeoutRef.current);
         speechTimeoutRef.current = null;
@@ -132,7 +95,6 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.log('Speech ended');
       setIsListening(false);
       
-      // Process current transcript if we have content
       if (transcript && !processingTranscriptRef.current) {
         processSpeechResult(transcript);
       }
@@ -144,16 +106,22 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.error('Voice recognition error:', e);
       setIsListening(false);
       
-      // Increment attempts counter
-      recognitionAttempts.current += 1;
-      
-      // Restart voice recognition after error, with backoff if multiple failures
-      if (e.error?.message !== 'not authorized' && e.error?.code !== '7' && recognitionAttempts.current < 5) {
-        const backoffDelay = Math.min(1000 * recognitionAttempts.current, 5000);
-        setTimeout(() => {
-          startListening();
-        }, backoffDelay);
+      // Don't retry on permission errors or when max attempts reached
+      if (e.error?.message === 'not authorized' || 
+          e.error?.code === '7' || 
+          e.error?.code === '1101' || // Speech service access error
+          recognitionAttempts.current >= 5) {
+        console.log('Not retrying voice recognition due to:', e.error?.message || 'max attempts reached');
+        return;
       }
+      
+      recognitionAttempts.current += 1;
+      const backoffDelay = Math.min(1000 * Math.pow(2, recognitionAttempts.current), 5000);
+      
+      console.log(`Retrying voice recognition in ${backoffDelay}ms (attempt ${recognitionAttempts.current})`);
+      setTimeout(() => {
+        if (!isListening) startListening();
+      }, backoffDelay);
     };
     
     // Initial authentication check
@@ -164,20 +132,12 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       (event, session) => {
         console.log('Auth state changed:', event);
         setUserId(session?.user?.id || null);
-        if (session?.user?.id) {
-          console.log('User ID set from auth state change:', session.user.id);
-        } else {
-          console.warn('No user ID in auth state change');
-        }
       }
     );
     
     return () => {
       Voice.destroy().then(Voice.removeAllListeners);
-      Tts.stop();
-      Tts.removeAllListeners('tts-start');
-      Tts.removeAllListeners('tts-finish');
-      Tts.removeAllListeners('tts-cancel');
+      AudioPlayerService.stopPlaying();
       subscription.unsubscribe();
       if (speechTimeoutRef.current) {
         clearTimeout(speechTimeoutRef.current);
@@ -193,32 +153,33 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [userId]);
   
-  // Handle speech recognition results with improved timeout logic
+  // Handle speech recognition results
   const handleSpeechResults = (e: SpeechResultsEvent) => {
-    if (e.value && e.value[0]) {
-      const text = e.value[0];
-      setTranscript(text);
-      lastTranscriptRef.current = text;
-      
-      // If AI is speaking, stop it to handle interruption
-      if (isSpeaking) {
-        Tts.stop();
-        setIsSpeaking(false);
-      }
-      
-      // Clear existing timeout and set a new one
-      if (speechTimeoutRef.current) {
-        clearTimeout(speechTimeoutRef.current);
-      }
-      
-      // Set timeout to process result if no new speech is detected for 0.5 second (reduced from 1s)
-      speechTimeoutRef.current = setTimeout(() => {
-        if (!processingTranscriptRef.current && lastTranscriptRef.current) {
-          console.log('User finished speaking at', Date.now());
-          processSpeechResult(lastTranscriptRef.current);
-        }
-      }, 500);
+    if (!e.value?.[0]) return;
+
+    const text = e.value[0];
+    setTranscript(text);
+    lastTranscriptRef.current = text;
+    
+    // If AI is speaking, stop it to handle interruption
+    if (isSpeaking) {
+      AudioPlayerService.stopPlaying();
+      setIsSpeaking(false);
     }
+    
+    // Clear existing timeout and set a new one
+    if (speechTimeoutRef.current) {
+      clearTimeout(speechTimeoutRef.current);
+    }
+    
+    // Set timeout to process result if no new speech is detected
+    speechTimeoutRef.current = setTimeout(async () => {
+      if (!processingTranscriptRef.current && lastTranscriptRef.current) {
+        console.log('User finished speaking at', Date.now());
+        await stopListening(); // Ensure we stop listening before processing
+        processSpeechResult(lastTranscriptRef.current);
+      }
+    }, 500);
   };
   
   // Process speech results and send to AI
@@ -229,31 +190,35 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       console.log('Processing speech:', text);
       
-      // Check if we have a user ID, if not try refreshing the session
-      let currentUserId = userId;
-      if (!currentUserId) {
+      // Ensure we have a valid user ID
+      if (!userId) {
         console.log('No user ID available, attempting to refresh session...');
-        await refreshUserSession();
-        // Fetch the session directly to get the latest userId
-        const { data, error } = await supabase.auth.getSession();
-        if (data?.session?.user?.id) {
-          currentUserId = data.session.user.id;
+        const { data: sessionData } = await supabase.auth.getSession();
+        const currentUserId = sessionData?.session?.user?.id;
+        
+        if (!currentUserId) {
+          console.error('No user session available after refresh');
+          return;
         }
+        
+        setUserId(currentUserId);
       }
       
-      // Process speech more aggressively - any meaningful content is processed
-      // Changed criteria to process even shorter phrases
-      if (text.length > 2) {
-        if (currentUserId) {
-          await sendMessage(text);
-        } else {
-          console.error('Cannot process speech: No user ID available after refresh');
-        }
+      // Process speech if we have valid text and user ID
+      if (text.length > 2 && userId) {
+        await sendMessage(text);
       }
+    } catch (error) {
+      console.error('Error processing speech:', error);
     } finally {
       processingTranscriptRef.current = false;
       lastTranscriptRef.current = '';
       setTranscript('');
+      
+      // Restart listening after processing completes
+      if (!isListening) {
+        setTimeout(() => startListening(), 500);
+      }
     }
   };
   
@@ -290,37 +255,48 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Start voice recognition
   const startListening = async () => {
     try {
-      if (isListening) {
-        console.log('Already listening, not starting again.');
-        return;
-      }
-      // Ensure we have the latest user session before starting speech recognition
-      if (!userId) {
-        await refreshUserSession();
-      }
+      // First destroy any existing instance
+      await Voice.destroy();
+      await new Promise(resolve => setTimeout(resolve, 300)); // Wait for cleanup
       
+      // Reset state
       processingTranscriptRef.current = false;
       lastTranscriptRef.current = '';
       setTranscript('');
+      recognitionAttempts.current = 0;
       
       if (speechTimeoutRef.current) {
         clearTimeout(speechTimeoutRef.current);
         speechTimeoutRef.current = null;
       }
-      
-      // Force destroy and recreate to avoid issues
-      if (recognitionAttempts.current > 3) {
-        await Voice.destroy();
-        await new Promise(resolve => setTimeout(resolve, 300));
+
+      // Ensure we have the latest user session before starting speech recognition
+      if (!userId) {
+        await refreshUserSession();
       }
-      await Voice.start('en-US');
-      console.log('Voice recognition started at', Date.now());
+
+      // Configure voice recognition with higher sensitivity
+      await Voice.start('en-US', {
+        partial: true, // Get partial results
+        continuous: true, // Keep listening
+        onPartialResults: true, // Enable partial results
+        speechDetectionMinimumThreshold: 0.1, // Lower threshold for speech detection
+        speechDetectionThreshold: 0.3, // Lower threshold for confirmed speech
+      });
+      
+      setIsListening(true);
+      console.log('Voice recognition started with high sensitivity at', Date.now());
     } catch (error) {
       console.error('Error starting voice recognition:', error);
+      setIsListening(false);
+      
       // Try again after a delay if failed
-      setTimeout(() => {
-        if (!isListening) startListening();
-      }, 800);
+      if (recognitionAttempts.current < 3) {
+        recognitionAttempts.current += 1;
+        setTimeout(() => {
+          if (!isListening) startListening();
+        }, 800);
+      }
     }
   };
   
@@ -332,19 +308,20 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         speechTimeoutRef.current = null;
       }
       
-      await Voice.stop();
-      console.log('Voice recognition stopped');
       setIsListening(false);
-      console.log('isListening set to false in stopListening');
       
       // Process any final transcript after stopping
       if (lastTranscriptRef.current && !processingTranscriptRef.current) {
         processSpeechResult(lastTranscriptRef.current);
       }
+      
+      // Ensure Voice is properly destroyed
+      await Voice.stop();
+      await Voice.destroy();
+      console.log('Voice recognition stopped and destroyed');
     } catch (error) {
       console.error('Error stopping voice recognition:', error);
       setIsListening(false);
-      console.log('isListening set to false in stopListening (error case)');
     }
   };
   
@@ -356,7 +333,6 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         !text.trim() ? 'Empty message' : 
         'Already processing');
       
-      // If the issue is no user ID, try to refresh the session
       if (!userId) {
         await refreshUserSession();
         if (!userId) {
@@ -371,7 +347,6 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       setIsProcessing(true);
       
-      // Add user message to UI and database
       const userMessage: Message = {
         id: Date.now().toString(),
         text,
@@ -387,14 +362,11 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         console.error('Error adding user message to database:', dbError);
       }
       
-      // Get AI response
       console.log('Sending message to AI at', Date.now());
       const aiResponse = await AIService.generatePersonalizedResponse(userId, text);
-      console.log('AI response received at', Date.now());
-      console.log('Received AI response:', aiResponse ? aiResponse.substring(0, 50) + '...' : 'No response');
+      console.log('AI response received at', Date.now(), 'Length:', aiResponse?.length || 0);
       
       if (aiResponse) {
-        // Add AI response to UI and database
         const botMessage: Message = {
           id: (Date.now() + 1).toString(),
           text: aiResponse,
@@ -410,22 +382,31 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           console.error('Error adding bot message to database:', botDbError);
         }
         
-        // Speak the response with error handling
+        // Use ElevenLabs for speech synthesis
         try {
-          // Break long responses into sentences to improve TTS stability
-          const sentences = aiResponse.match(/[^.!?]+[.!?]+/g) || [aiResponse];
+          setIsSpeaking(true);
           
-          console.log(`Speaking ${sentences.length} sentences with TTS`);
+          // Split response into sentences for more natural speech
+          const sentences = ElevenLabsService.splitIntoSentences(aiResponse);
+          console.log('Speaking response with', sentences.length, 'sentences');
+          
           for (const sentence of sentences) {
             if (sentence.trim()) {
-              console.log('TTS speaking at', Date.now());
-              console.log('Speaking sentence:', sentence.trim().substring(0, 30) + '...');
-              await Tts.speak(sentence.trim());
+              console.log('Generating speech for:', sentence.trim().substring(0, 30) + '...');
+              const audioBuffer = await ElevenLabsService.textToSpeech(sentence.trim());
+              
+              if (audioBuffer) {
+                console.log('Playing audio buffer of size:', audioBuffer.byteLength);
+                await AudioPlayerService.playAudioBuffer(audioBuffer);
+              } else {
+                console.error('Failed to generate speech for sentence');
+              }
             }
           }
-        } catch (ttsError) {
-          console.error('TTS speak error:', ttsError);
-          // Continue execution even if TTS fails
+        } catch (speechError) {
+          console.error('Speech synthesis error:', speechError);
+        } finally {
+          setIsSpeaking(false);
         }
       }
     } catch (error) {
@@ -434,9 +415,8 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setIsProcessing(false);
       setTranscript('');
       
-      // Restart listening after processing completes
       if (!isListening) {
-        setTimeout(() => startListening(), 500); // 500ms delay to avoid double start
+        setTimeout(() => startListening(), 500);
       }
     }
   };

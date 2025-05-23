@@ -17,7 +17,8 @@ export default function(api) {
             'SUPABASE_URL',
             'SUPABASE_ANON_KEY',
             'TWILIO_ACCOUNT_SID',
-            'TWILIO_AUTH_TOKEN'
+            'TWILIO_AUTH_TOKEN',
+            'ELEVEN_LABS_API_KEY'
           ]
         },
       ],

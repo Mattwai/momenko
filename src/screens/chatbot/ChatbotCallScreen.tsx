@@ -18,48 +18,34 @@ const ChatbotCallScreen = () => {
   const { isListening, isSpeaking, startListening, stopListening, transcript, refreshUserSession } = useChat();
   const [callSeconds, setCallSeconds] = useState(0);
   const [audioPermissionGranted, setAudioPermissionGranted] = useState(false);
+  const [soundDetected, setSoundDetected] = useState(false);
   
   // Configure audio session for speech recognition
   useEffect(() => {
     const setupAudio = async () => {
       try {
-        if (Platform.OS === 'ios') {
-          // Request permissions first
-          const permission = await Audio.requestPermissionsAsync();
-          const granted = permission.status === 'granted';
-          setAudioPermissionGranted(granted);
+        // Request permissions first
+        const permission = await Audio.requestPermissionsAsync();
+        const granted = permission.status === 'granted';
+        setAudioPermissionGranted(granted);
+        
+        if (granted) {
+          // Configure audio session properly for both recording and playback
+          await Audio.setAudioModeAsync({
+            allowsRecordingIOS: true,
+            playsInSilentModeIOS: true,
+            staysActiveInBackground: true,
+            interruptionModeIOS: InterruptionModeIOS.DoNotMix,
+            interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+            shouldDuckAndroid: true,
+            playThroughEarpieceAndroid: false,
+          });
           
-          if (granted) {
-            // Configure audio session properly for voice recognition and playback
-            await Audio.setAudioModeAsync({
-              // This is the critical fix - ensure we're using the correct mode
-              allowsRecordingIOS: true,
-              playsInSilentModeIOS: true,
-              // Use correct audio category for both recording and playback
-              staysActiveInBackground: true,
-              interruptionModeIOS: InterruptionModeIOS.DoNotMix,
-              shouldDuckAndroid: false,
-              interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
-              playThroughEarpieceAndroid: false,
-            });
-            
-            console.log('Audio session configured successfully');
-          }
-        } else if (Platform.OS === 'android') {
-          // Android specific setup
-          const permission = await Audio.requestPermissionsAsync();
-          const granted = permission.status === 'granted';
-          setAudioPermissionGranted(granted);
-          
-          if (granted) {
-            await Audio.setAudioModeAsync({
-              allowsRecordingIOS: true,
-              shouldDuckAndroid: false,
-              interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
-              playThroughEarpieceAndroid: false,
-              staysActiveInBackground: true,
-            });
-          }
+          console.log('Audio session configured successfully');
+          // Start listening after audio is configured
+          startListening();
+        } else {
+          console.warn('Audio permissions not granted');
         }
       } catch (error) {
         console.error('Error configuring audio session:', error);
@@ -103,6 +89,21 @@ const ChatbotCallScreen = () => {
       globalThis.clearInterval(durationTimer);
     };
   }, [audioPermissionGranted]);
+
+  // Add sound detection effect
+  useEffect(() => {
+    let soundTimer: NodeJS.Timeout | null = null;
+    
+    if (transcript) {
+      setSoundDetected(true);
+      if (soundTimer) clearTimeout(soundTimer);
+      soundTimer = setTimeout(() => setSoundDetected(false), 300);
+    }
+    
+    return () => {
+      if (soundTimer) clearTimeout(soundTimer);
+    };
+  }, [transcript]);
 
   const handleEndCall = () => {
     stopListening();
@@ -156,23 +157,28 @@ const ChatbotCallScreen = () => {
         </View>
         
         {/* Voice wave animation */}
-        {(isListening || isSpeaking) && (
-          <View style={styles.waveContainer} accessibilityLabel="Voice input waves">
-            {[1, 2, 3].map((i) => (
-              <Animatable.View
-                key={i}
-                animation={{
-                  0: { height: 24 },
-                  0.5: { height: 56 },
-                  1: { height: 24 }
-                }}
-                duration={1000}
-                iterationCount="infinite"
-                style={[styles.wave, { backgroundColor: isSpeaking ? '#6366F1' : '#fff' }]}
-              />
-            ))}
-          </View>
-        )}
+        <View style={styles.waveContainer} accessibilityLabel="Voice input waves">
+          {[1, 2, 3].map((i) => (
+            <Animatable.View
+              key={i}
+              animation={soundDetected || isSpeaking ? {
+                0: { height: 24 },
+                0.5: { height: 56 },
+                1: { height: 24 }
+              } : undefined}
+              duration={1000}
+              iterationCount="infinite"
+              style={[
+                styles.wave,
+                { 
+                  height: soundDetected || isSpeaking ? 24 : 12,
+                  backgroundColor: isSpeaking ? '#6366F1' : '#fff',
+                  opacity: isListening ? 1 : 0.5
+                }
+              ]}
+            />
+          ))}
+        </View>
         
         {/* Call controls */}
         <View style={styles.callControls}>
@@ -197,26 +203,6 @@ const ChatbotCallScreen = () => {
             <Icon name="phone-off" size={54} color="#fff" style={{ alignSelf: 'center' }} />
           </TouchableOpacity>
         </View>
-        {/* Debug TTS button - only in development */}
-        {__DEV__ && (
-          <TouchableOpacity
-            style={{ position: 'absolute', bottom: 8, left: 8, right: 8, backgroundColor: '#6366F1', borderRadius: 12, padding: 16, alignItems: 'center' }}
-            onPress={async () => {
-              const Tts = require('react-native-tts').default;
-              console.log('TTS test: speaking test message');
-              try {
-                await Tts.speak('This is a test of the chatbot voice. If you hear this, TTS is working.');
-              } catch (e) {
-                console.error('TTS test error:', e);
-              }
-            }}
-            accessible
-            accessibilityRole="button"
-            accessibilityLabel="Test chatbot voice"
-          >
-            <Text style={{ color: '#fff', fontSize: 18, fontWeight: 'bold' }}>Test Chatbot Voice</Text>
-          </TouchableOpacity>
-        )}
       </ImageBackground>
     </SafeAreaView>
   );
@@ -261,7 +247,6 @@ const styles = StyleSheet.create({
   },
   wave: {
     width: 12,
-    backgroundColor: '#fff',
     borderRadius: 6,
     marginHorizontal: 10,
   },
