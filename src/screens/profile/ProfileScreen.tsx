@@ -47,11 +47,6 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       onPress: () => navigation.navigate('Memories'),
     },
     {
-      title: 'Cognitive Assessment',
-      icon: 'clipboard-text',
-      onPress: () => navigation.navigate('CognitiveAssessment'),
-    },
-    {
       title: 'Personal Information',
       icon: 'account',
       onPress: () => navigation.navigate('PersonalInformation'),

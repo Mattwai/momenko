@@ -5,31 +5,25 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { theme } from './src/theme/theme';
 import LoginScreen from './src/screens/auth/LoginScreen';
-import DashboardScreen from './src/screens/dashboard/DashboardScreen';
 import ChatbotScreen from './src/screens/chatbot/ChatbotScreen';
 import RegisterScreen from './src/screens/auth/RegisterScreen';
 import ProfileScreen from './src/screens/profile/ProfileScreen';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import CognitiveAssessmentScreen from './src/screens/chatbot/CognitiveAssessmentScreen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import SettingsScreen from './src/screens/profile/SettingsScreen';
-import FamilyDashboardScreen from './src/screens/dashboard/FamilyDashboardScreen';
 import MemoriesScreen from './src/screens/profile/MemoriesScreen';
 import ChatbotCallScreen from './src/screens/chatbot/ChatbotCallScreen';
 import PersonalInformationScreen from './src/screens/profile/PersonalInformationScreen';
 
 export type RootStackParamList = {
   Login: undefined;
-  Dashboard: undefined;
   Chatbot: undefined;
   ChatbotCall: undefined;
   Register: undefined;
   Profile: undefined;
   Main: { screen?: string } | undefined;
-  CognitiveAssessment: undefined;
   Settings: undefined;
-  Family: undefined;
   Memories: undefined;
   PersonalInformation: undefined;
 };
@@ -42,10 +36,8 @@ function ProfileStackScreen() {
   return (
     <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
       <ProfileStack.Screen name="Profile" component={ProfileScreen} />
-      <ProfileStack.Screen name="CognitiveAssessment" component={CognitiveAssessmentScreen} />
       <ProfileStack.Screen name="Memories" component={MemoriesScreen} />
       <ProfileStack.Screen name="Settings" component={SettingsScreen} />
-      <ProfileStack.Screen name="Family" component={FamilyDashboardScreen} />
       <ProfileStack.Screen name="PersonalInformation" component={PersonalInformationScreen} />
     </ProfileStack.Navigator>
   );
@@ -63,14 +55,12 @@ function MainTabs() {
         tabBarItemStyle: { paddingVertical: 8 },
         tabBarIcon: ({ color, focused }) => {
           let iconName = '';
-          if (route.name === 'Dashboard') iconName = 'view-dashboard-outline';
-          else if (route.name === 'Chatbot') iconName = 'robot-outline';
+          if (route.name === 'Chatbot') iconName = 'robot-outline';
           else if (route.name === 'ProfileTab') iconName = 'account-circle-outline';
           return <Icon name={iconName} color={color} size={focused ? 30 : 25} />;
         },
       })}
     >
-      <Tab.Screen name="Dashboard" component={DashboardScreen} />
       <Tab.Screen name="Chatbot" component={ChatbotScreen} />
       <Tab.Screen name="ProfileTab" component={ProfileStackScreen} options={{ title: 'Profile' }} />
     </Tab.Navigator>
