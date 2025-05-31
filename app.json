@@ -1,19 +1,22 @@
 {
   "expo": {
-    "name": "momenko",
+    "name": "Momenko",
     "slug": "momenko",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": false,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.mattwai.momenko",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "This app needs access to the microphone for voice interactions.",
         "NSCameraUsageDescription": "This app needs access to camera for video calls with caregivers.",
@@ -25,6 +28,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "package": "com.mattwai.momenko",
       "permissions": [
         "INTERNET",
         "RECORD_AUDIO",
@@ -34,7 +38,11 @@
         "NOTIFICATIONS"
       ]
     },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
     "plugins": [
+      "expo-av",
       [
         "expo-notifications",
         {
@@ -42,9 +50,6 @@
           "color": "#ffffff"
         }
       ]
-    ],
-    "web": {
-      "favicon": "./assets/favicon.png"
-    }
+    ]
   }
 }

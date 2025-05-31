@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -7,6 +7,7 @@ import { signInWithEmail } from '../../services/supabase/auth';
 import { GradientBackground } from '../../components/ui/GradientBackground';
 import { AnimatedInput } from '../../components/ui/AnimatedInput';
 import * as Animatable from 'react-native-animatable';
+import { useSupabase } from '../../contexts/SupabaseContext';
 
 type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
 
@@ -19,18 +20,44 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { session, isLoading } = useSupabase();
 
-  const handleLogin = async () => {
-    setLoading(true);
-    setError('');
-    const { error } = await signInWithEmail(email, password);
-    setLoading(false);
-    if (error) {
-      setError(error.message || 'Login failed');
-    } else {
+  useEffect(() => {
+    if (session && !isLoading) {
       navigation.replace('Main');
     }
+  }, [session, isLoading, navigation]);
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      setError('Please enter both email and password');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+      const { error: signInError } = await signInWithEmail(email, password);
+      
+      if (signInError) {
+        setError(signInError.message || 'Login failed');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <GradientBackground>
+        <View style={styles.container}>
+          <Text style={styles.title}>Loading...</Text>
+        </View>
+      </GradientBackground>
+    );
+  }
 
   return (
     <GradientBackground>
@@ -50,6 +77,8 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             value={email}
             onChangeText={setEmail}
             error={error}
+            keyboardType="email-address"
+            autoCapitalize="none"
           />
           <AnimatedInput
             label="Password"
@@ -58,6 +87,10 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             secureTextEntry
             error={error}
           />
+
+          {error ? (
+            <Text style={styles.errorText}>{error}</Text>
+          ) : null}
 
           <Animatable.View animation="fadeInUp" delay={400}>
             <Button
@@ -126,6 +159,11 @@ const styles = StyleSheet.create({
   },
   registerButton: {
     marginTop: 16,
+  },
+  errorText: {
+    color: 'red',
+    marginTop: 8,
+    textAlign: 'center',
   },
 });
 

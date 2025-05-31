@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User } from '@supabase/supabase-js';
-import { supabase, userService, culturalService, conversationService, phrasesService, emergencyService, checkInService } from '../services/supabase';
+import { User, Session } from '@supabase/supabase-js';
+import { supabase, initializeSupabase } from '../lib/supabase';
+import { userService, culturalService } from '../services/supabase';
 import { CulturalProfile } from '../types';
 
 interface SupabaseContextType {
   user: User | null;
+  session: Session | null;
   userProfile: any | null;
   culturalProfile: CulturalProfile | null;
   isLoading: boolean;
@@ -15,6 +17,7 @@ interface SupabaseContextType {
 
 const SupabaseContext = createContext<SupabaseContextType>({
   user: null,
+  session: null,
   userProfile: null,
   culturalProfile: null,
   isLoading: true,
@@ -33,6 +36,7 @@ export const useSupabase = () => {
 
 export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [userProfile, setUserProfile] = useState<any | null>(null);
   const [culturalProfile, setCulturalProfile] = useState<CulturalProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -74,21 +78,36 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   useEffect(() => {
+    setIsLoading(true);
+    
+    // Initialize Supabase session
+    initializeSupabase().then((initialSession) => {
+      if (initialSession) {
+        setSession(initialSession);
+        setUser(initialSession.user);
+      }
+      setIsLoading(false);
+    });
+
     // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+      console.log('Auth state changed:', event);
+      setSession(newSession);
+      
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         setIsLoading(true);
-        await refreshUser();
+        if (newSession?.user) {
+          setUser(newSession.user);
+          await refreshUser();
+        }
         setIsLoading(false);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
+        setSession(null);
         setUserProfile(null);
         setCulturalProfile(null);
       }
     });
-
-    // Initial load
-    refreshUser().finally(() => setIsLoading(false));
 
     return () => {
       subscription.unsubscribe();
@@ -97,6 +116,7 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const value = {
     user,
+    session,
     userProfile,
     culturalProfile,
     isLoading,
