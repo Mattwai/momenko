@@ -1,15 +1,15 @@
 import { Audio, AVPlaybackStatus, InterruptionModeAndroid, InterruptionModeIOS } from 'expo-av';
 import { AudioState } from '../../types';
-
-const SILENCE_THRESHOLD = -50; // dB
-const SILENCE_DURATION = 3000; // 3 seconds in milliseconds
+import config from '../../config';
+import { permissionsManager } from '../../utils/permissions';
 
 export class AudioManager {
   private recording: Audio.Recording | null = null;
   private player: Audio.Sound | null = null;
-  private silenceTimer: number | null = null;
+  private silenceTimer: NodeJS.Timeout | null = null;
   private lastVolume = 0;
   private onSilenceDetected: (() => void) | null = null;
+  private isInitialized = false;
 
   constructor() {
     this.configureAudioSession();
@@ -21,20 +21,22 @@ export class AudioManager {
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
         staysActiveInBackground: false,
-        interruptionModeIOS: InterruptionModeIOS.MixWithOthers,
+        interruptionModeIOS: InterruptionModeIOS.DoNotMix,
         interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
         shouldDuckAndroid: true,
         playThroughEarpieceAndroid: false,
       });
+      this.isInitialized = true;
     } catch (error) {
       console.error('Error configuring audio session:', error);
+      this.isInitialized = false;
+      throw error;
     }
   }
 
   async requestPermissions(): Promise<boolean> {
     try {
-      const permission = await Audio.requestPermissionsAsync();
-      return permission.granted;
+      return await permissionsManager.ensureAudioRecordingPermission();
     } catch (error) {
       console.error('Error requesting permissions:', error);
       return false;
@@ -43,16 +45,32 @@ export class AudioManager {
 
   async startRecording(onSilenceDetected?: () => void): Promise<void> {
     try {
+      // Clean up any existing recording first
+      if (this.recording) {
+        await this.stopRecording();
+      }
+
       const permissionGranted = await this.requestPermissions();
       if (!permissionGranted) {
         throw new Error('Audio recording permissions not granted');
       }
 
+      // Ensure audio session is configured
+      if (!this.isInitialized) {
+        await this.configureAudioSession();
+      }
+
       this.onSilenceDetected = onSilenceDetected || null;
       
+      // Configure audio mode for recording
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
+        staysActiveInBackground: false,
+        interruptionModeIOS: InterruptionModeIOS.DoNotMix,
+        interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+        shouldDuckAndroid: true,
+        playThroughEarpieceAndroid: false,
       });
 
       const recordingOptions: Audio.RecordingOptions = {
@@ -60,24 +78,24 @@ export class AudioManager {
           extension: '.m4a',
           outputFormat: Audio.AndroidOutputFormat.MPEG_4,
           audioEncoder: Audio.AndroidAudioEncoder.AAC,
-          sampleRate: 44100,
+          sampleRate: config.audio.sampleRate,
           numberOfChannels: 1,
-          bitRate: 128000,
+          bitRate: config.audio.bitRate,
         },
         ios: {
           extension: '.m4a',
           outputFormat: Audio.IOSOutputFormat.MPEG4AAC,
           audioQuality: Audio.IOSAudioQuality.MAX,
-          sampleRate: 44100,
+          sampleRate: config.audio.sampleRate,
           numberOfChannels: 1,
-          bitRate: 128000,
+          bitRate: config.audio.bitRate,
           linearPCMBitDepth: 16,
           linearPCMIsBigEndian: false,
           linearPCMIsFloat: false,
         },
         web: {
           mimeType: 'audio/webm',
-          bitsPerSecond: 128000,
+          bitsPerSecond: config.audio.bitRate,
         },
       };
 
@@ -91,6 +109,7 @@ export class AudioManager {
       this.recording = recording;
     } catch (error) {
       console.error('Error starting recording:', error);
+      await this.cleanup();
       throw error;
     }
   }
@@ -98,17 +117,21 @@ export class AudioManager {
   private handleRecordingStatusUpdate = (status: Audio.RecordingStatus) => {
     if (!status.isRecording) return;
 
-    const currentVolume = status.metering || -160; // Use -160 as minimum if metering is null
+    // Safely get metering value, fallback to -160 if not available
+    const currentVolume = typeof status.metering === 'number' ? status.metering : -160;
     
-    // Detect silence
-    if (currentVolume <= SILENCE_THRESHOLD) {
+    // Detect silence - only start timer if we don't already have one
+    if (currentVolume <= config.audio.silenceThreshold) {
       if (!this.silenceTimer && this.onSilenceDetected) {
         this.silenceTimer = setTimeout(() => {
-          this.onSilenceDetected?.();
+          if (this.onSilenceDetected) {
+            this.onSilenceDetected();
+          }
           this.silenceTimer = null;
-        }, SILENCE_DURATION) as unknown as number;
+        }, config.audio.silenceDuration);
       }
     } else {
+      // Clear silence timer if we detect sound
       if (this.silenceTimer) {
         clearTimeout(this.silenceTimer);
         this.silenceTimer = null;
@@ -120,23 +143,25 @@ export class AudioManager {
 
   async stopRecording(): Promise<string> {
     if (!this.recording) {
-      throw new Error('No active recording');
+      return '';
     }
 
     try {
-      await this.recording.stopAndUnloadAsync();
-      const uri = this.recording.getURI();
-      this.recording = null;
-      
+      // Clear silence timer first
       if (this.silenceTimer) {
         clearTimeout(this.silenceTimer);
         this.silenceTimer = null;
       }
 
+      await this.recording.stopAndUnloadAsync();
+      const uri = this.recording.getURI();
+      this.recording = null;
+
       return uri || '';
     } catch (error) {
       console.error('Error stopping recording:', error);
-      throw error;
+      this.recording = null;
+      return '';
     }
   }
 
@@ -182,6 +207,13 @@ export class AudioManager {
   }
 
   async cleanup(): Promise<void> {
+    // Clear silence timer first
+    if (this.silenceTimer) {
+      clearTimeout(this.silenceTimer);
+      this.silenceTimer = null;
+    }
+
+    // Clean up recording
     if (this.recording) {
       try {
         await this.recording.stopAndUnloadAsync();
@@ -191,6 +223,7 @@ export class AudioManager {
       this.recording = null;
     }
 
+    // Clean up player
     if (this.player) {
       try {
         await this.player.unloadAsync();
@@ -200,10 +233,7 @@ export class AudioManager {
       this.player = null;
     }
 
-    if (this.silenceTimer) {
-      clearTimeout(this.silenceTimer);
-      this.silenceTimer = null;
-    }
+    this.onSilenceDetected = null;
   }
 
   getAudioState(): AudioState {

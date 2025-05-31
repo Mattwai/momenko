@@ -16,6 +16,11 @@ export default function(api) {
             'DEEPSEEK_API_URL',
             'SUPABASE_URL',
             'SUPABASE_ANON_KEY',
+            'AZURE_SPEECH_KEY',
+            'AZURE_SPEECH_REGION',
+            'ELEVEN_LABS_API_KEY',
+            'APP_ENV',
+            'DEBUG_MODE',
           ]
         },
       ],

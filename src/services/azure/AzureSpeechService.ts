@@ -1,16 +1,13 @@
 import * as sdk from 'microsoft-cognitiveservices-speech-sdk';
 import { PreferredLanguage, AzureVoiceConfig, AZURE_VOICE_PROFILES } from '../../types';
-
-// These should be added to your .env file
-const AZURE_SPEECH_KEY = process.env.AZURE_SPEECH_KEY || '';
-const AZURE_SPEECH_REGION = process.env.AZURE_SPEECH_REGION || '';
+import config from '../../config';
 
 interface SpeechConfig {
   language: PreferredLanguage;
   voiceConfig?: AzureVoiceConfig;
 }
 
-interface SynthesisResult {
+interface _SynthesisResult {
   audioData: ArrayBuffer;
   reason: sdk.ResultReason;
   errorDetails?: string;
@@ -22,14 +19,19 @@ export class AzureSpeechService {
   private recognizer: sdk.SpeechRecognizer | null = null;
   private synthesizer: sdk.SpeechSynthesizer | null = null;
 
-  constructor(config: SpeechConfig) {
-    if (!AZURE_SPEECH_KEY || !AZURE_SPEECH_REGION) {
+  constructor(speechConfig: SpeechConfig) {
+    if (!config.azure.isConfigured) {
       throw new Error('Azure Speech credentials not configured');
     }
 
-    this.speechConfig = sdk.SpeechConfig.fromSubscription(AZURE_SPEECH_KEY, AZURE_SPEECH_REGION);
-    this.currentLanguage = config.language;
-    this.configureForLanguage(config.language, config.voiceConfig);
+    try {
+      this.speechConfig = sdk.SpeechConfig.fromSubscription(config.azure.speechKey, config.azure.speechRegion);
+      this.currentLanguage = speechConfig.language;
+      this.configureForLanguage(speechConfig.language, speechConfig.voiceConfig);
+    } catch (error) {
+      console.error('Failed to initialize Azure Speech Service:', error);
+      throw new Error('Failed to initialize Azure Speech Service');
+    }
   }
 
   private configureForLanguage(language: PreferredLanguage, voiceConfig?: AzureVoiceConfig) {
@@ -69,30 +71,72 @@ export class AzureSpeechService {
         await this.stopContinuousRecognition();
       }
 
-      this.recognizer = new sdk.SpeechRecognizer(this.speechConfig);
+      // Configure audio input from microphone
+      const audioConfig = sdk.AudioConfig.fromDefaultMicrophoneInput();
+      this.recognizer = new sdk.SpeechRecognizer(this.speechConfig, audioConfig);
 
-      // Handle interim results
+      // Handle interim results (recognizing)
       this.recognizer.recognizing = (_, event) => {
-        onInterimResult(event.result.text);
+        if (event.result.text && event.result.text.trim().length > 0) {
+          onInterimResult(event.result.text);
+        }
       };
 
-      // Handle final results
+      // Handle final results (recognized)
       this.recognizer.recognized = (_, event) => {
         if (event.result.reason === sdk.ResultReason.RecognizedSpeech) {
-          onFinalResult(event.result.text);
+          if (event.result.text && event.result.text.trim().length > 0) {
+            onFinalResult(event.result.text);
+          }
+        } else if (event.result.reason === sdk.ResultReason.NoMatch) {
+          console.log('No speech recognized');
         }
       };
 
-      // Handle errors
+      // Handle session events
+      this.recognizer.sessionStarted = (_, event) => {
+        console.log('Speech recognition session started:', event.sessionId);
+      };
+
+      this.recognizer.sessionStopped = (_, event) => {
+        console.log('Speech recognition session stopped:', event.sessionId);
+      };
+
+      // Handle errors and cancellation
       this.recognizer.canceled = (_, event) => {
+        console.log('Recognition canceled:', event.reason);
         if (event.reason === sdk.CancellationReason.Error) {
-          onError(`Error: ${event.errorDetails}`);
+          const errorMsg = `Recognition error: ${event.errorDetails || 'Unknown error'}`;
+          console.error(errorMsg);
+          onError(errorMsg);
         }
       };
 
-      await this.recognizer.startContinuousRecognitionAsync();
+      // Start recognition with proper Promise handling
+      return new Promise<void>((resolve, reject) => {
+        if (!this.recognizer) {
+          reject(new Error('Recognizer not initialized'));
+          return;
+        }
+
+        this.recognizer.startContinuousRecognitionAsync(
+          () => {
+            console.log('Continuous recognition started successfully');
+            resolve();
+          },
+          (error) => {
+            const errorMsg = `Failed to start recognition: ${error}`;
+            console.error(errorMsg);
+            onError(errorMsg);
+            reject(new Error(errorMsg));
+          }
+        );
+      });
     } catch (error) {
-      onError(`Failed to start recognition: ${error}`);
+      const errorMsg = `Failed to initialize recognition: ${error}`;
+      console.error(errorMsg);
+      onError(errorMsg);
+      throw new Error(errorMsg);
     }
   }
 
@@ -100,11 +144,37 @@ export class AzureSpeechService {
     if (!this.recognizer) return;
 
     try {
-      await this.recognizer.stopContinuousRecognitionAsync();
-      this.recognizer.close();
-      this.recognizer = null;
+      return new Promise<void>((resolve) => {
+        if (!this.recognizer) {
+          resolve();
+          return;
+        }
+
+        this.recognizer.stopContinuousRecognitionAsync(
+          () => {
+            if (this.recognizer) {
+              this.recognizer.close();
+              this.recognizer = null;
+            }
+            console.log('Recognition stopped successfully');
+            resolve();
+          },
+          (error) => {
+            console.error('Error stopping recognition:', error);
+            if (this.recognizer) {
+              this.recognizer.close();
+              this.recognizer = null;
+            }
+            resolve(); // Still resolve to avoid hanging
+          }
+        );
+      });
     } catch (error) {
-      console.error('Error stopping recognition:', error);
+      console.error('Error in stopContinuousRecognition:', error);
+      if (this.recognizer) {
+        this.recognizer.close();
+        this.recognizer = null;
+      }
     }
   }
 
@@ -116,42 +186,72 @@ export class AzureSpeechService {
     try {
       if (this.synthesizer) {
         this.synthesizer.close();
+        this.synthesizer = null;
       }
 
-      this.synthesizer = new sdk.SpeechSynthesizer(this.speechConfig);
+      // Configure audio output
+      const audioConfig = sdk.AudioConfig.fromDefaultSpeakerOutput();
+      this.synthesizer = new sdk.SpeechSynthesizer(this.speechConfig, audioConfig);
 
       // Add cultural-specific SSML adjustments
       const ssmlText = this.addCulturalSSMLAdjustments(text);
 
-      // Wrap the speakSsmlAsync call to handle the type correctly
-      const synthesisPromise = new Promise<SynthesisResult>((resolve, reject) => {
-        this.synthesizer?.speakSsmlAsync(
+      // Handle synthesis with proper Promise wrapping
+      return new Promise<void>((resolve, reject) => {
+        if (!this.synthesizer) {
+          reject(new Error('Synthesizer not initialized'));
+          return;
+        }
+
+        this.synthesizer.speakSsmlAsync(
           ssmlText,
-          result => {
-            resolve({
-              audioData: result.audioData,
-              reason: result.reason,
-              errorDetails: result.errorDetails,
-            });
+          (result) => {
+            try {
+              if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
+                onAudioData(result.audioData);
+                resolve();
+              } else if (result.reason === sdk.ResultReason.Canceled) {
+                const cancellation = sdk.CancellationDetails.fromResult(result);
+                const errorMsg = `Synthesis canceled: ${cancellation.reason} - ${cancellation.errorDetails || 'Unknown error'}`;
+                console.error(errorMsg);
+                onError(errorMsg);
+                reject(new Error(errorMsg));
+              } else {
+                const errorMsg = `Synthesis failed with reason: ${result.reason}`;
+                console.error(errorMsg);
+                onError(errorMsg);
+                reject(new Error(errorMsg));
+              }
+            } catch (error) {
+              const errorMsg = `Error processing synthesis result: ${error}`;
+              console.error(errorMsg);
+              onError(errorMsg);
+              reject(new Error(errorMsg));
+            } finally {
+              // Clean up synthesizer
+              if (this.synthesizer) {
+                this.synthesizer.close();
+                this.synthesizer = null;
+              }
+            }
           },
-          error => {
-            reject(error);
+          (error) => {
+            const errorMsg = `Synthesis error: ${error}`;
+            console.error(errorMsg);
+            onError(errorMsg);
+            if (this.synthesizer) {
+              this.synthesizer.close();
+              this.synthesizer = null;
+            }
+            reject(new Error(errorMsg));
           }
         );
       });
-
-      const result = await synthesisPromise;
-
-      if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
-        onAudioData(result.audioData);
-      } else {
-        onError(`Synthesis failed: ${result.errorDetails || 'Unknown error'}`);
-      }
-
-      this.synthesizer.close();
-      this.synthesizer = null;
     } catch (error) {
-      onError(`Synthesis error: ${error}`);
+      const errorMsg = `Failed to initialize synthesis: ${error}`;
+      console.error(errorMsg);
+      onError(errorMsg);
+      throw new Error(errorMsg);
     }
   }
 
@@ -205,11 +305,21 @@ export class AzureSpeechService {
   }
 
   async cleanup(): Promise<void> {
-    await this.stopContinuousRecognition();
-    
-    if (this.synthesizer) {
-      this.synthesizer.close();
-      this.synthesizer = null;
+    try {
+      // Stop recognition first
+      await this.stopContinuousRecognition();
+      
+      // Clean up synthesizer
+      if (this.synthesizer) {
+        try {
+          this.synthesizer.close();
+        } catch (error) {
+          console.error('Error closing synthesizer:', error);
+        }
+        this.synthesizer = null;
+      }
+    } catch (error) {
+      console.error('Error during cleanup:', error);
     }
   }
 } 
