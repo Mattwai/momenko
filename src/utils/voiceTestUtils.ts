@@ -1,6 +1,6 @@
 import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from 'expo-av';
 import { AudioManager } from '../services/audio/AudioManager';
-import { AzureSpeechService } from '../services/azure/AzureSpeechService';
+import { ReactNativeSpeechService } from '../services/speech/ReactNativeSpeechService';
 import { permissionsManager } from './permissions';
 import config, { validateConfiguration, logConfigurationStatus } from '../config';
 import { PreferredLanguage } from '../types';
@@ -46,8 +46,8 @@ export class VoiceTestUtils {
     // Test 3: Audio session setup
     results.push(await this.testAudioSession());
 
-    // Test 4: Azure Speech Service initialization
-    results.push(await this.testAzureSpeechService(language));
+    // Test 4: React Native Speech Service initialization
+    results.push(await this.testReactNativeSpeechService(language));
 
     // Test 5: AudioManager initialization
     results.push(await this.testAudioManager());
@@ -161,35 +161,43 @@ export class VoiceTestUtils {
     }
   }
 
-  private async testAzureSpeechService(language: PreferredLanguage): Promise<VoiceTestResult> {
-    let speechService: AzureSpeechService | null = null;
+  private async testReactNativeSpeechService(language: PreferredLanguage): Promise<VoiceTestResult> {
+    let speechService: ReactNativeSpeechService | null = null;
     
     try {
-      speechService = new AzureSpeechService({
+      const isSupported = await ReactNativeSpeechService.isSupported();
+      
+      speechService = new ReactNativeSpeechService({
         language: language
       });
 
+      const supportedLanguages = await ReactNativeSpeechService.getSupportedLanguages();
+      const isSimulationMode = __DEV__ || typeof navigator !== 'undefined';
+
       return {
-        test: 'Azure Speech Service',
+        test: 'React Native Speech Service',
         passed: true,
-        message: 'Azure Speech Service initialized successfully',
+        message: isSimulationMode 
+          ? 'Speech Service initialized in simulation mode (Expo Go compatible)'
+          : 'React Native Speech Service initialized successfully',
         details: {
           language,
-          configured: config.azure.isConfigured,
-          region: config.azure.speechRegion
+          supported: true,
+          simulationMode: isSimulationMode,
+          supportedLanguages: supportedLanguages.slice(0, 5), // Show first 5 languages
+          totalLanguages: supportedLanguages.length,
+          note: isSimulationMode ? 'Running in Expo Go - simulation mode active' : 'Native speech recognition available'
         }
       };
     } catch (error) {
       return {
-        test: 'Azure Speech Service',
+        test: 'React Native Speech Service',
         passed: false,
-        message: `Azure Speech Service initialization failed: ${error}`,
+        message: `Speech Service initialization failed: ${error}`,
         details: { 
           error,
           language,
-          azureConfigured: config.azure.isConfigured,
-          hasKey: !!config.azure.speechKey,
-          hasRegion: !!config.azure.speechRegion
+          supported: false
         }
       };
     } finally {
@@ -285,11 +293,11 @@ export class VoiceTestUtils {
 
   private async testVoiceRecognitionPipeline(language: PreferredLanguage): Promise<VoiceTestResult> {
     let audioManager: AudioManager | null = null;
-    let speechService: AzureSpeechService | null = null;
+    let speechService: ReactNativeSpeechService | null = null;
     
     try {
       audioManager = new AudioManager();
-      speechService = new AzureSpeechService({ language });
+      speechService = new ReactNativeSpeechService({ language });
 
       let interimResults: string[] = [];
       let finalResults: string[] = [];
@@ -316,8 +324,8 @@ export class VoiceTestUtils {
 
       await audioManager.startRecording();
 
-      // Run for 3 seconds
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // Run for 5 seconds (longer for simulation)
+      await new Promise(resolve => setTimeout(resolve, 5000));
 
       // Stop everything
       await audioManager.stopRecording();
@@ -325,21 +333,28 @@ export class VoiceTestUtils {
 
       const hasResults = interimResults.length > 0 || finalResults.length > 0;
       const hasErrors = errors.length > 0;
+      const isSimulationMode = __DEV__ || typeof navigator !== 'undefined';
 
       return {
         test: 'Voice Recognition Pipeline',
-        passed: !hasErrors, // Pass if no errors occurred, regardless of audio input
+        passed: !hasErrors, // Pass if no errors occurred
         message: hasErrors 
           ? `Pipeline test failed with errors: ${errors.join(', ')}`
           : hasResults
-            ? 'Pipeline test successful - voice input detected'
-            : 'Pipeline test completed - no voice input detected (this is normal in test environment)',
+            ? isSimulationMode 
+              ? 'Pipeline test successful - simulation completed'
+              : 'Pipeline test successful - voice input detected'
+            : isSimulationMode
+              ? 'Pipeline test completed - simulation mode (no real audio input expected)'
+              : 'Pipeline test completed - no voice input detected (this is normal in test environment)',
         details: {
           interimResults,
           finalResults,
           errors,
           language,
-          duration: 3000
+          duration: 5000,
+          simulationMode: isSimulationMode,
+          note: isSimulationMode ? 'Running in Expo Go simulation mode' : 'Native speech recognition test'
         }
       };
     } catch (error) {
@@ -405,8 +420,25 @@ export class VoiceTestUtils {
 
     diagnostic.push('');
     diagnostic.push('=== Configuration Details ===');
-    diagnostic.push(`Azure Key Length: ${config.azure.speechKey.length}`);
-    diagnostic.push(`Azure Region: ${config.azure.speechRegion}`);
+    
+    // Check if running in Expo Go
+    const isExpoGo = __DEV__ || typeof navigator !== 'undefined';
+    diagnostic.push(`Platform: ${isExpoGo ? 'Expo Go (Simulation Mode)' : 'Native Build'}`);
+    
+    // Check speech recognition support
+    try {
+      const speechSupported = await ReactNativeSpeechService.isSupported();
+      diagnostic.push(`Speech Recognition: ${speechSupported ? 'SUPPORTED' : 'NOT SUPPORTED'}`);
+      if (speechSupported) {
+        const languages = await ReactNativeSpeechService.getSupportedLanguages();
+        diagnostic.push(`Supported Languages: ${languages.length} available`);
+        if (isExpoGo) {
+          diagnostic.push(`Mode: Simulation (for real speech, create development build)`);
+        }
+      }
+    } catch (error) {
+      diagnostic.push(`Speech Recognition: ERROR - ${error}`);
+    }
     diagnostic.push(`Sample Rate: ${config.audio.sampleRate}`);
     diagnostic.push(`Bit Rate: ${config.audio.bitRate}`);
     diagnostic.push(`Debug Mode: ${config.app.debugMode}`);

@@ -19,7 +19,7 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../../App';
 import { voiceTestUtils, type VoiceTestSuite, quickVoiceDiagnostic } from '../../utils/voiceTestUtils';
-import { useVoiceRecognition } from '../../hooks/useVoiceRecognition';
+import { useVoiceCommunication } from '../../hooks/useVoiceCommunication';
 import { useCulturalContext } from '../../contexts/CulturalContext';
 import { PreferredLanguage } from '../../types';
 import config from '../../config';
@@ -36,15 +36,22 @@ const VoiceDebugScreen = () => {
 
   const {
     isListening,
+    isSpeaking,
     interimTranscript,
     finalTranscript: _finalTranscript,
     error,
     audioState,
+    isInitialized,
+    isSimulationMode,
+    simulationInfo,
     startListening,
     stopListening,
+    speak: _speak,
+    stopSpeaking: _stopSpeaking,
     resetTranscript,
-  } = useVoiceRecognition({
+  } = useVoiceCommunication({
     preferredLanguage: culturalProfile.preferredLanguage as PreferredLanguage,
+    enableTTS: true,
     onTranscriptUpdate: (text, isFinal) => {
       if (isFinal && text.trim()) {
         setManualTestTranscripts(prev => [...prev, text]);
@@ -146,6 +153,15 @@ const VoiceDebugScreen = () => {
               <Text style={styles.statusLabel}>Platform:</Text>
               <Chip mode="outlined">{Platform.OS}</Chip>
             </View>
+            <View style={styles.statusRow}>
+              <Text style={styles.statusLabel}>Speech Mode:</Text>
+              <Chip 
+                mode="outlined"
+                textStyle={{ color: isSimulationMode ? '#FF9800' : '#4CAF50' }}
+              >
+                {isSimulationMode ? 'Simulation' : 'Native'}
+              </Chip>
+            </View>
           </Card.Content>
         </Card>
 
@@ -178,17 +194,25 @@ const VoiceDebugScreen = () => {
         {/* Manual Voice Test */}
         <Card style={styles.card}>
           <Card.Title
-            title="Manual Voice Test"
-            left={(props) => <Icon {...props} name="microphone-variant" />}
+            title={isSimulationMode ? "Manual Voice Test (Simulation)" : "Manual Voice Test"}
+            left={(props) => <Icon {...props} name={isSimulationMode ? "microphone-variant-off" : "microphone-variant"} />}
           />
           <Card.Content>
+            {isSimulationMode && (
+              <View style={styles.simulationBanner}>
+                <Icon name="information" size={16} color="#FF9800" />
+                <Text style={styles.simulationText}>
+                  {simulationInfo || 'Running in Expo Go - Voice simulation mode'}
+                </Text>
+              </View>
+            )}
             <View style={styles.manualTestControls}>
               <Button
                 mode={isListening ? "contained" : "outlined"}
                 onPress={toggleManualTest}
                 icon={isListening ? "microphone-off" : "microphone"}
                 buttonColor={isListening ? "#F44336" : "#4CAF50"}
-                disabled={!!error}
+                disabled={!!error || !isInitialized || isSpeaking}
                 style={styles.testButton}
               >
                 {isListening ? 'Stop Listening' : 'Start Listening'}
@@ -210,10 +234,15 @@ const VoiceDebugScreen = () => {
               </View>
             )}
 
-            {isListening && (
+            {(isListening || isSpeaking) && (
               <View style={styles.listeningIndicator}>
                 <ActivityIndicator color="#4CAF50" />
-                <Text style={styles.listeningText}>Listening...</Text>
+                <Text style={styles.listeningText}>
+                  {isListening 
+                    ? (isSimulationMode ? '🎭 Simulating listening...' : 'Listening...') 
+                    : (isSimulationMode ? '🎭 Simulating speech...' : 'Speaking...')
+                  }
+                </Text>
               </View>
             )}
 
@@ -239,7 +268,9 @@ const VoiceDebugScreen = () => {
               <Text style={styles.audioStateLabel}>Audio State:</Text>
               <Text style={styles.audioStateText}>
                 Recording: {audioState.isRecording ? 'Yes' : 'No'} | 
-                Playing: {audioState.isPlaying ? 'Yes' : 'No'}
+                Playing: {audioState.isPlaying ? 'Yes' : 'No'} | 
+                Initialized: {isInitialized ? 'Yes' : 'No'} |
+                Mode: {isSimulationMode ? 'Simulation' : 'Native'}
               </Text>
             </View>
           </Card.Content>
@@ -303,7 +334,8 @@ const VoiceDebugScreen = () => {
             Voice Recording Debug Tool v1.0
           </Text>
           <Text style={styles.footerText}>
-            Language: {culturalProfile.preferredLanguage.toUpperCase()}
+            Language: {culturalProfile.preferredLanguage.toUpperCase()} | 
+            Mode: {isSimulationMode ? 'Simulation' : 'Native'}
           </Text>
         </View>
       </ScrollView>
@@ -481,6 +513,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     textAlign: 'center',
+  },
+  simulationBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF3E0',
+    padding: 8,
+    borderRadius: 4,
+    marginBottom: 12,
+  },
+  simulationText: {
+    color: '#FF9800',
+    marginLeft: 8,
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '500',
   },
 });
 

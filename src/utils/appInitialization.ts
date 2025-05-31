@@ -115,9 +115,13 @@ class AppInitialization {
         }
       }
 
-      // Step 4: Validate critical Azure configuration
-      if (!config.azure.isConfigured) {
-        warnings.push('Azure Speech Service not configured - voice recognition will not work');
+      // Step 4: Validate optional Azure configuration
+      if (!config.azure.isConfigured && config.voice.fallbackToAzure) {
+        warnings.push('Azure Speech Service not configured - falling back to device speech recognition');
+      } else if (config.azure.isConfigured) {
+        if (logDetails) {
+          console.log('✅ Azure Speech Service configured (optional)');
+        }
       }
 
       // Step 5: Platform-specific checks

@@ -13,7 +13,7 @@ import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../../../App";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useVoiceRecognition } from "../../hooks/useVoiceRecognition";
+import { useVoiceCommunication } from "../../hooks/useVoiceCommunication";
 import { PreferredLanguage } from "../../types";
 import { useCulturalContext } from "../../contexts/CulturalContext";
 import VoiceInputIndicator from "../../components/ui/VoiceInputIndicator";
@@ -28,20 +28,27 @@ const ChatbotCallScreen = () => {
     Array<{ text: string; isFinal: boolean }>
   >([]);
 
-  // Initialize voice recognition with cultural preferences
+  // Initialize voice communication with cultural preferences
   const {
     isListening,
+    isSpeaking,
     interimTranscript,
     finalTranscript: _finalTranscript,
     error,
     audioState: _audioState,
     detectedLanguage: _detectedLanguage,
+    isInitialized,
+    isSimulationMode,
+    simulationInfo,
     startListening,
     stopListening,
-  } = useVoiceRecognition({
+    speak: _speak,
+    stopSpeaking: _stopSpeaking,
+  } = useVoiceCommunication({
     preferredLanguage: culturalProfile.preferredLanguage as PreferredLanguage,
     silenceThreshold: 3, // 3 seconds of silence before auto-stop
     autoStop: true,
+    enableTTS: true, // Enable text-to-speech for responses
     onTranscriptUpdate: (text, isFinal) => {
       setTranscripts((prev) => [...prev, { text, isFinal }]);
     },
@@ -91,16 +98,25 @@ const ChatbotCallScreen = () => {
   // Get culturally appropriate status text
   const getStatusText = () => {
     if (error) return "";
+    if (isSimulationMode && !isListening && !isSpeaking) {
+      return "🎭 Simulation Mode - Tap mic to test";
+    }
     if (isListening) {
-      switch (culturalProfile.preferredLanguage) {
-        case "mi":
-          return "Kei te whakarongo...";
-        case "zh":
-          return "正在聆听...";
-        case "en":
-        default:
-          return "Listening...";
-      }
+      const baseText = (() => {
+        switch (culturalProfile.preferredLanguage) {
+          case "mi":
+            return "Kei te whakarongo...";
+          case "zh":
+            return "正在聆听...";
+          case "en":
+          default:
+            return "Listening...";
+        }
+      })();
+      return isSimulationMode ? `🎭 ${baseText} (Simulated)` : baseText;
+    }
+    if (isSpeaking) {
+      return isSimulationMode ? "🎭 Speaking... (Simulated)" : "Speaking...";
     }
     return "";
   };
@@ -125,13 +141,25 @@ const ChatbotCallScreen = () => {
           {getStatusText()}
         </Text>
 
+        {/* Simulation mode banner */}
+        {isSimulationMode && (
+          <View style={styles.simulationBanner}>
+            <Text style={styles.simulationText}>
+              🚀 Running in Expo Go - Voice simulation active
+            </Text>
+            <Text style={styles.simulationSubtext}>
+              For real speech recognition, create a development build
+            </Text>
+          </View>
+        )}
+
         {/* Voice wave animation */}
-        {isListening && (
+        {(isListening || isSpeaking) && (
           <View
             style={styles.waveContainer}
             accessibilityLabel="Voice input waves"
           >
-            <VoiceInputIndicator active={isListening} />
+            <VoiceInputIndicator active={isListening || isSpeaking} />
           </View>
         )}
 
@@ -172,9 +200,10 @@ const ChatbotCallScreen = () => {
             accessible
             accessibilityRole="button"
             accessibilityLabel={
-              isListening ? "Mute microphone" : "Unmute microphone"
+              isListening ? "Stop listening" : "Start listening"
             }
             activeOpacity={0.7}
+            disabled={!isInitialized || isSpeaking}
           >
             <Icon
               name={isListening ? "microphone-off" : "microphone"}
@@ -280,6 +309,25 @@ const styles = StyleSheet.create({
   },
   endCallButton: {
     backgroundColor: "#EF4444",
+  },
+  simulationBanner: {
+    backgroundColor: "rgba(255, 193, 7, 0.9)",
+    padding: 12,
+    borderRadius: 8,
+    marginVertical: 16,
+    alignItems: "center",
+  },
+  simulationText: {
+    color: "#333",
+    fontSize: 16,
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+  simulationSubtext: {
+    color: "#555",
+    fontSize: 12,
+    textAlign: "center",
+    marginTop: 4,
   },
 });
 

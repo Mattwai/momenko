@@ -38,6 +38,8 @@ export interface AppConfig {
     defaultSilenceTimeout: number; // seconds
     maxTranscriptLength: number;
     recognitionTimeoutMs: number;
+    useNativeSpeech: boolean;
+    fallbackToAzure: boolean;
   };
 }
 
@@ -99,6 +101,8 @@ const config: AppConfig = {
     defaultSilenceTimeout: 3, // seconds
     maxTranscriptLength: 5000,
     recognitionTimeoutMs: 300000, // 5 minutes
+    useNativeSpeech: true, // Use React Native speech recognition by default
+    fallbackToAzure: false, // Don't fallback to Azure unless explicitly enabled
   }
 };
 
@@ -106,8 +110,13 @@ const config: AppConfig = {
 export const validateConfiguration = (): { isValid: boolean; errors: string[] } => {
   const errors: string[] = [];
 
-  if (!config.azure.isConfigured) {
-    errors.push('Azure Speech Service credentials not configured');
+  // Azure is now optional since we use React Native speech recognition
+  // Only warn if Azure is configured but incomplete
+  if (config.azure.speechKey && !config.azure.speechRegion) {
+    errors.push('Azure Speech Service region missing (key provided but no region)');
+  }
+  if (!config.azure.speechKey && config.azure.speechRegion) {
+    errors.push('Azure Speech Service key missing (region provided but no key)');
   }
 
   if (!config.supabase.isConfigured) {
@@ -127,12 +136,18 @@ export const logConfigurationStatus = (): void => {
       azure: {
         configured: config.azure.isConfigured,
         region: config.azure.speechRegion,
-        keyLength: config.azure.speechKey.length
+        keyLength: config.azure.speechKey.length,
+        optional: true
       },
       supabase: {
         configured: config.supabase.isConfigured,
         url: config.supabase.url,
         keyLength: config.supabase.anonKey.length
+      },
+      voice: {
+        useNativeSpeech: config.voice.useNativeSpeech,
+        fallbackToAzure: config.voice.fallbackToAzure,
+        autoStopOnSilence: config.voice.autoStopOnSilence
       },
       app: {
         env: config.app.env,
