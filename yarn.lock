@@ -6382,19 +6382,6 @@ ts-interface-checker@^0.1.9:
   resolved "https://registry.yarnpkg.com/ts-interface-checker/-/ts-interface-checker-0.1.13.tgz#784fd3d679722bc103b1b4b8030bcddb5db2a699"
   integrity sha512-Y/arvbn+rrz3JCKl9C4kVNfTfSm2/mEp5FSz5EsZSANGPSlQrpRI5M4PKF+mJnE52jOO90PnPSc3Ur3bTQw0gA==
 
-twilio@^5.6.1:
-  version "5.6.1"
-  resolved "https://registry.yarnpkg.com/twilio/-/twilio-5.6.1.tgz#58f441da0fa0af0053574fad1691e799d48c6438"
-  integrity sha512-rCwjDEmYl4mK4fNiTXf00YHOg2Xq5hejpwOBg/lhP8QSyDwHLLXj3igQ+cv9NAQcN+8RsJEY7rG4FysBUP8UKQ==
-  dependencies:
-    axios "^1.8.3"
-    dayjs "^1.11.9"
-    https-proxy-agent "^5.0.0"
-    jsonwebtoken "^9.0.2"
-    qs "^6.9.4"
-    scmp "^2.1.0"
-    xmlbuilder "^13.0.2"
-
 type-check@^0.4.0, type-check@~0.4.0:
   version "0.4.0"
   resolved "https://registry.yarnpkg.com/type-check/-/type-check-0.4.0.tgz#07b8203bfa7056c0657050e3ccd2c37730bab8f1"
