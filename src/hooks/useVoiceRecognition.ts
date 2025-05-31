@@ -24,7 +24,7 @@ interface VoiceRecognitionOptions {
 export function useVoiceRecognition(options: VoiceRecognitionOptions = {}) {
   const {
     onTranscriptUpdate,
-    onLanguageDetected,
+    onLanguageDetected: _onLanguageDetected,
     onError,
     preferredLanguage = 'en',
     silenceThreshold = 3,
@@ -47,7 +47,7 @@ export function useVoiceRecognition(options: VoiceRecognitionOptions = {}) {
 
   const audioManager = useRef<AudioManager | null>(null);
   const speechService = useRef<AzureSpeechService | null>(null);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<number | null>(null);
 
   // Initialize services
   useEffect(() => {
@@ -131,7 +131,7 @@ export function useVoiceRecognition(options: VoiceRecognitionOptions = {}) {
       if (autoStop && silenceThreshold > 0) {
         timeoutRef.current = setTimeout(() => {
           stopListening();
-        }, silenceThreshold * 1000);
+        }, silenceThreshold * 1000) as unknown as number;
       }
     } catch (error) {
       handleError(error instanceof Error ? error.message : 'Failed to start listening');

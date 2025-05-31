@@ -48,7 +48,7 @@ export const CulturalProvider: React.FC<CulturalProviderProps> = ({ children }) 
     }
   };
 
-  const saveCulturalProfile = async (profile: CulturalProfile) => {
+  const saveCulturalProfile = async (_profile: CulturalProfile) => {
     try {
       // TODO: Implement saving to AsyncStorage or your preferred storage solution
       // await AsyncStorage.setItem('culturalProfile', JSON.stringify(profile));

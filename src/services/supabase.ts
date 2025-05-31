@@ -1,6 +1,4 @@
 import 'react-native-url-polyfill/auto';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Database } from '../types';
 import { supabase } from '../lib/supabase';
 
 // Helper function to handle errors consistently
@@ -30,7 +28,7 @@ export const userService = {
     return data;
   },
 
-  updateUserProfile: async (userId: string, updates: any) => {
+  updateUserProfile: async (userId: string, updates: Record<string, unknown>) => {
     const { data, error } = await supabase
       .from('users')
       .update(updates)
@@ -80,7 +78,7 @@ export const conversationService = {
     return data;
   },
 
-  saveConversation: async (userId: string, messages: any) => {
+  saveConversation: async (userId: string, messages: Record<string, unknown>[]) => {
     const { data, error } = await supabase
       .from('conversations')
       .insert({
@@ -95,7 +93,7 @@ export const conversationService = {
     return data;
   },
 
-  updateConversation: async (conversationId: string, messages: any) => {
+  updateConversation: async (conversationId: string, messages: Record<string, unknown>[]) => {
     const { data, error } = await supabase
       .from('conversations')
       .update({
@@ -168,7 +166,7 @@ export const emergencyService = {
     return data;
   },
 
-  updateEmergencyContact: async (contactId: string, updates: any) => {
+  updateEmergencyContact: async (contactId: string, updates: Record<string, unknown>) => {
     const { data, error } = await supabase
       .from('emergency_contacts')
       .update(updates)

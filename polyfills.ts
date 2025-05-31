@@ -35,7 +35,7 @@ if (typeof globalThis.ReadableStream === 'undefined') {
 }
 
 // Audio Context polyfill
-if (typeof globalThis.AudioContext === 'undefined' && typeof globalThis.webkitAudioContext === 'undefined') {
+if (typeof globalThis.AudioContext === 'undefined' && typeof (globalThis as typeof globalThis & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext === 'undefined') {
   // Simple mock for AudioContext since we're using expo-av for actual audio handling
   class MockAudioContext implements AudioContextType {
     readonly baseLatency = 0;

@@ -1,4 +1,3 @@
-import { Platform } from 'react-native';
 import { Audio, AVPlaybackStatus, InterruptionModeAndroid, InterruptionModeIOS } from 'expo-av';
 import { AudioState } from '../../types';
 
@@ -8,7 +7,7 @@ const SILENCE_DURATION = 3000; // 3 seconds in milliseconds
 export class AudioManager {
   private recording: Audio.Recording | null = null;
   private player: Audio.Sound | null = null;
-  private silenceTimer: NodeJS.Timeout | null = null;
+  private silenceTimer: number | null = null;
   private lastVolume = 0;
   private onSilenceDetected: (() => void) | null = null;
 
@@ -107,7 +106,7 @@ export class AudioManager {
         this.silenceTimer = setTimeout(() => {
           this.onSilenceDetected?.();
           this.silenceTimer = null;
-        }, SILENCE_DURATION);
+        }, SILENCE_DURATION) as unknown as number;
       }
     } else {
       if (this.silenceTimer) {

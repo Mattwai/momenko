@@ -4,10 +4,18 @@ import { supabase, initializeSupabase } from '../lib/supabase';
 import { userService, culturalService } from '../services/supabase';
 import { CulturalProfile } from '../types';
 
+interface UserProfile {
+  id: string;
+  email: string;
+  cultural_profile_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 interface SupabaseContextType {
   user: User | null;
   session: Session | null;
-  userProfile: any | null;
+  userProfile: UserProfile | null;
   culturalProfile: CulturalProfile | null;
   isLoading: boolean;
   error: Error | null;
@@ -37,7 +45,7 @@ export const useSupabase = () => {
 export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [userProfile, setUserProfile] = useState<any | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [culturalProfile, setCulturalProfile] = useState<CulturalProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);

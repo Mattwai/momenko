@@ -16,9 +16,15 @@ export interface AudioContextType {
   createMediaStreamSource(): MediaStreamAudioSourceNode;
 }
 
+interface ProcessType {
+  env: Record<string, string | undefined>;
+  version: string;
+  platform: string;
+}
+
 interface CustomGlobal {
   Buffer: typeof import('buffer').Buffer;
-  process: NodeJS.Process;
+  process: ProcessType;
   TextEncoder: typeof import('text-encoding').TextEncoder;
   TextDecoder: typeof import('text-encoding').TextDecoder;
   ReadableStream: typeof import('web-streams-polyfill').ReadableStream;
@@ -27,12 +33,30 @@ interface CustomGlobal {
   AudioContext: {
     new(): AudioContextType;
   };
+  setTimeout: (callback: () => void, delay: number) => number;
+  clearTimeout: (id: number) => void;
+  setInterval: (callback: () => void, delay: number) => number;
+  clearInterval: (id: number) => void;
 }
 
 declare global {
-  interface Window extends CustomGlobal {}
+  interface Window extends CustomGlobal {
+    // React Native specific window properties
+    ReactNativeWebView?: unknown;
+    webkitAudioContext?: typeof AudioContext;
+  }
   var window: Window;
-  interface globalThis extends CustomGlobal {}
+  interface globalThis extends CustomGlobal {
+    // Node.js/React Native global properties
+    __DEV__?: boolean;
+    webkitAudioContext?: typeof AudioContext;
+  }
+  
+  // Global timer functions
+  var setTimeout: (callback: () => void, delay: number) => number;
+  var clearTimeout: (id: number) => void;
+  var setInterval: (callback: () => void, delay: number) => number;
+  var clearInterval: (id: number) => void;
 }
 
 export {}; 

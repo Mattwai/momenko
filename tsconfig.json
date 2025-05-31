@@ -17,7 +17,8 @@
   "include": [
     "src/**/*",
     "App.tsx",
-    "polyfills.ts"
+    "polyfills.ts",
+    "types/**/*"
   ],
   "exclude": [
     "node_modules",
