@@ -3,8 +3,6 @@ import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, Button } from 'react-native-paper';
 import PersonalizedGreeting from '../../components/ui/PersonalizedGreeting';
 import ProgressIndicator from '../../components/ui/ProgressIndicator';
-import EmergencyContactButton from '../../components/ui/EmergencyContactButton';
-import FamilyContactButton from '../../components/ui/FamilyContactButton';
 import LargeText from '../../components/ui/LargeText';
 
 const FamilyDashboardScreen = () => {
@@ -40,10 +38,6 @@ const FamilyDashboardScreen = () => {
       {recentActivities.map((item, idx) => (
         <Text key={idx} style={styles.value}>{item.type}: {item.summary}</Text>
       ))}
-      <View style={styles.buttonRow}>
-        <FamilyContactButton onPress={() => {}} />
-        <EmergencyContactButton onPress={() => {}} />
-      </View>
       <Button
         mode="contained"
         style={styles.careTeamButton}

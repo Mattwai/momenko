@@ -2,8 +2,6 @@ import React from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, Card, Button, useTheme } from 'react-native-paper';
 import * as Animatable from 'react-native-animatable';
-import EmergencyContactButton from '../../components/ui/EmergencyContactButton';
-import FamilyContactButton from '../../components/ui/FamilyContactButton';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PersonalizedGreeting from '../../components/ui/PersonalizedGreeting';
 import ActivityPrompt from '../../components/ui/ActivityPrompt';
@@ -46,13 +44,6 @@ const DashboardScreen: React.FC = () => {
           <Animatable.View animation="fadeInDown" duration={1000}>
             <PersonalizedGreeting name="Susan" />
           </Animatable.View>
-          
-          <View style={styles.topButtonsContainer}>
-            <View style={styles.topButtons}>
-              <EmergencyContactButton onPress={() => {}} />
-              <FamilyContactButton onPress={() => {}} />
-            </View>
-          </View>
           
           <View style={styles.sectionContainer}>
             <LargeText style={styles.sectionTitle}>Today's Reminders</LargeText>
