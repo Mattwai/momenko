@@ -15,6 +15,7 @@ import SettingsScreen from './src/screens/profile/SettingsScreen';
 import MemoriesScreen from './src/screens/profile/MemoriesScreen';
 import ChatbotCallScreen from './src/screens/chatbot/ChatbotCallScreen';
 import PersonalInformationScreen from './src/screens/profile/PersonalInformationScreen';
+import { SupabaseProvider } from './src/contexts/SupabaseContext';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -71,43 +72,45 @@ const App = () => {
   return (
     <SafeAreaProvider>
       <PaperProvider theme={theme}>
-        <NavigationContainer>
-          <Stack.Navigator
-            initialRouteName="Login"
-            screenOptions={{
-              headerStyle: {
-                backgroundColor: theme.colors.primary,
-              },
-              headerTintColor: '#FFFFFF',
-              headerTitleStyle: {
-                fontWeight: 'bold',
-              },
-              cardStyle: { backgroundColor: theme.colors.background },
-              cardStyleInterpolator: ({ current: { progress } }) => ({
-                cardStyle: {
-                  opacity: progress,
+        <SupabaseProvider>
+          <NavigationContainer>
+            <Stack.Navigator
+              initialRouteName="Login"
+              screenOptions={{
+                headerStyle: {
+                  backgroundColor: theme.colors.primary,
                 },
-              }),
-            }}
-          >
-            <Stack.Screen 
-              name="Login" 
-              component={LoginScreen}
-              options={{
-                headerShown: false,
+                headerTintColor: '#FFFFFF',
+                headerTitleStyle: {
+                  fontWeight: 'bold',
+                },
+                cardStyle: { backgroundColor: theme.colors.background },
+                cardStyleInterpolator: ({ current: { progress } }) => ({
+                  cardStyle: {
+                    opacity: progress,
+                  },
+                }),
               }}
-            />
-            <Stack.Screen 
-              name="Register" 
-              component={RegisterScreen}
-              options={{
-                headerShown: false,
-              }}
-            />
-            <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
-            <Stack.Screen name="ChatbotCall" component={ChatbotCallScreen} options={{ headerShown: false }} />
-          </Stack.Navigator>
-        </NavigationContainer>
+            >
+              <Stack.Screen 
+                name="Login" 
+                component={LoginScreen}
+                options={{
+                  headerShown: false,
+                }}
+              />
+              <Stack.Screen 
+                name="Register" 
+                component={RegisterScreen}
+                options={{
+                  headerShown: false,
+                }}
+              />
+              <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
+              <Stack.Screen name="ChatbotCall" component={ChatbotCallScreen} options={{ headerShown: false }} />
+            </Stack.Navigator>
+          </NavigationContainer>
+        </SupabaseProvider>
       </PaperProvider>
     </SafeAreaProvider>
   );
