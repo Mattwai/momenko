@@ -3,4 +3,256 @@ description:
 globs: 
 alwaysApply: true
 ---
-The application is targeted for elderly with dementia to use. They will primerily using the chatbot interface, their families should also be able to access it. It should prompt questions and activites to do based on Congitive Stimulation Theropy and should diagnose what stage of dementia the patient is at while talking and also consider that when asking types of questions and activities. I also want to develop a personalised AI for each account so over their conversations the AI will learn more about them and turn into their digital avatar so even if the patient does forget stuff the AI will remember. All the design and architecture decisions you make should be with these goals in mind. Ensure accessability is a key priority including easy to use, large text, good color contrast etc.
+# Cursor Context Rules - Elderly Care Voice Assistant
+
+## Project Mission
+You are building a culturally-sensitive voice-based AI companion app for elderly users with dementia, addressing both loneliness and the critical gap in culturally appropriate healthcare support. The primary goals are reducing isolation, providing culturally-aware assistance, enabling caregiver check-ins, and supporting elderly individuals who revert to their native language or struggle with English-only healthcare facilities. This addresses a major barrier that forces families to provide home care due to lack of culturally sensitive institutional support.
+
+## Target User Profile
+- **Primary Users**: Elderly individuals (65+) with early to moderate dementia
+- **Secondary Users**: Family caregivers and healthcare providers
+- **Key Characteristics**: May forget they have the app, need simple interactions, prefer consistent experiences, may have hearing/vision limitations
+- **Emotional Needs**: Companionship, patience, non-judgmental conversation, feeling heard and valued
+
+## Technical Stack & Constraints
+- **Frontend**: React Native with Expo (cross-platform mobile)
+- **Backend**: Supabase (PostgreSQL, real-time subscriptions, auth)
+- **Voice Services**: Azure Cognitive Services (cost-effective, neural voices)
+- **Budget Reality**: Solo developer, must optimize for cost-per-conversation
+- **Scalability Target**: Support hundreds of elderly users without breaking budget
+
+## Cultural Framework & Language Support
+
+### Core Cultural Groups (Phase 1)
+**English/Western**: Direct communication, individual autonomy, medical model approach
+**Te Reo Māori/Māori**: Whānau-centered, spiritual journey perspective, prefer "mate wareware" over "dementia"
+**Chinese/Mandarin**: Filial piety emphasis, family honor concerns, stigma around mental illness
+
+### Cultural Sensitivity Principles
+
+#### Māori Cultural Approach
+- **Terminology**: Use "mate wareware" instead of "dementia" - the preferred term identified in research that positions the importance of using te reo
+- **Perspective**: Some kaumātua don't see mate wareware negatively - view it as "a spiritual journey" that must be respected
+- **Values**: Emphasize whānau (family) support, wairuatanga (spirituality), and aroha (love/compassion)
+- **Communication Style**: Indirect, story-based, respectful of elders' mana (spiritual power)
+- **Approach**: Focus on supporting whānau rather than treating illness
+
+#### Chinese Cultural Approach  
+- **Family Dynamics**: Filial piety plays essential role in family care decision-making
+- **Stigma Awareness**: Heavy stigma exists in Chinese communities, families often refuse professional help due to cultural values and sense of duty, with negative attitudes toward psychotherapy
+- **Communication Style**: Respectful of hierarchy, indirect approach to sensitive topics
+- **Values**: Honor, family reputation, collective responsibility
+- **Approach**: Support family caregivers, provide education to reduce stigma
+
+#### Western/English Approach
+- **Medical Model**: Direct discussion of symptoms and treatments
+- **Individual Focus**: Personal autonomy and choice
+- **Communication Style**: Direct, informational, solution-oriented
+- **Values**: Independence, medical intervention, professional care
+
+### Extensible Cultural Framework
+```javascript
+// Cultural context system for future expansion
+const culturalProfiles = {
+  maori: {
+    preferredTerms: { dementia: "mate wareware" },
+    communicationStyle: "indirect_respectful",
+    familyStructure: "whanau_centered",
+    spiritualAspects: "journey_based",
+    stigmaLevel: "low_to_moderate",
+    // Extensible for researcher input
+    customNuances: {}
+  },
+  chinese: {
+    preferredTerms: { dementia: "痴呆症" },
+    communicationStyle: "hierarchical_respectful", 
+    familyStructure: "filial_piety_based",
+    spiritualAspects: "karma_concepts",
+    stigmaLevel: "high",
+    customNuances: {}
+  },
+  western: {
+    preferredTerms: { dementia: "dementia" },
+    communicationStyle: "direct_medical",
+    familyStructure: "individual_focused",
+    spiritualAspects: "optional",
+    stigmaLevel: "moderate",
+    customNuances: {}
+  }
+  // Framework ready for expansion: pacific, indian, etc.
+}
+```
+
+## Core Design Principles
+
+### 1. Cultural Responsiveness First
+- Adapt communication style based on user's cultural background
+- Use culturally appropriate terminology and concepts
+- Respect different attitudes toward cognitive changes
+- Support multilingual conversations with seamless language switching
+- Understand that silence or indirect responses may be culturally appropriate
+
+### 2. Simplicity with Cultural Depth
+- Large, accessible UI elements (minimum 18pt font)
+- Single-purpose screens with minimal cognitive load
+- Consistent visual patterns and terminology
+- Voice-first interaction with visual backup
+
+### 2. Dignity & Respect
+- Never patronizing or childish language
+- Assume intelligence and life experience
+- Acknowledge confusion without embarrassment
+- Maintain conversational warmth without being overly familiar
+
+### 3. Cost-Conscious Architecture
+- Cache common phrases to reduce API calls
+- Implement silence detection to prevent accidental usage
+- Design conversations to be listening-focused
+- Monitor and optimize per-user costs
+- Prioritize Azure over more expensive services like ElevenLabs
+
+### 4. Reliability & Safety
+- Graceful degradation when services fail
+- Emergency contact integration
+- Conversation logging for caregiver review
+- Privacy-first approach with local processing when possible
+
+## Key Features & Functionality
+
+### Multilingual Voice Interaction
+- Support for English, Te Reo Māori, and Mandarin Chinese speech recognition
+- Azure Cognitive Services with region-specific accent models
+- Language switching detection within conversations
+- Cultural context-aware responses based on detected language
+- SSML adaptation for each language's prosody patterns
+
+### Cultural Conversation Patterns
+- **Māori**: Story-based responses, whakataukī (proverbs), whānau check-ins
+- **Chinese**: Respectful hierarchy acknowledgment, family-centered questions, indirect emotional support
+- **Western**: Direct but warm communication, individual-focused check-ins
+
+### Facility Integration Features
+- Healthcare facility staff dashboard with cultural context alerts
+- Family member communication in preferred languages
+- Cultural care plan integration
+- Staff education resources about cultural approaches to cognitive changes
+
+### Conversation Design
+- Patient, grandparent-like personality
+- Active listening with minimal but meaningful responses
+- Context retention across sessions
+- Gentle redirection when confused
+- Natural conversation flow without rigid scripting
+
+### Caregiver Integration
+- Scheduled check-in notifications
+- Conversation summary reports
+- Customizable reminder schedules
+- Emergency escalation protocols
+- Usage analytics for care planning
+
+### Memory & Context
+- Conversation history persistence
+- User preference learning
+- Cached common phrases for cost optimization
+- Context-aware responses based on time of day/recent conversations
+
+## Code Quality Standards
+
+### React Native Best Practices
+- Use functional components with hooks
+- Implement proper error boundaries
+- Optimize re-renders with React.memo and useMemo
+- Handle app state changes (background/foreground)
+- Proper cleanup in useEffect hooks
+
+### Performance Requirements
+- Minimize audio processing latency (<2 seconds)
+- Efficient memory management for long conversations
+- Smooth UI interactions (60fps)
+- Fast app startup time (<3 seconds)
+- Graceful handling of poor network conditions
+
+### Accessibility Standards
+- WCAG 2.1 AA compliance
+- Screen reader compatibility
+- High contrast mode support
+- Large touch targets (minimum 44x44pt)
+- Alternative input methods
+
+## Data Architecture
+
+### Supabase Cultural Schema
+- User cultural profiles and preferences
+- Culturally-tagged conversation templates
+- Family structure mapping for appropriate communication
+- Cultural education resources for caregivers
+- Multilingual conversation history with cultural context tags
+
+### Cultural Privacy Considerations
+- Different cultural attitudes toward data sharing
+- Family involvement levels based on cultural norms
+- Spiritual/religious considerations in data handling
+- Community vs. individual privacy expectations
+
+### Privacy & Security
+- Minimal data collection
+- Local audio processing when possible
+- Encrypted conversation storage
+- HIPAA-consideration for healthcare partnerships
+- Clear data retention policies
+
+## Error Handling Philosophy
+- Always provide gentle, reassuring feedback
+- Never blame the user for technical issues
+- Offer simple retry mechanisms
+- Maintain conversation context through errors
+- Log issues for improvement without exposing technical details
+
+## Testing Priorities
+- Voice recognition accuracy across age groups
+- Audio quality on various devices and environments
+- Long conversation session stability
+- Network interruption recovery
+- Caregiver notification reliability
+
+## Cultural Conversation Examples
+
+### Māori Context
+**Good**: "Kia ora. I can hear you're feeling a bit māuiui today. Would you like to share a kōrero about something that brought you joy recently?"
+**Cultural Note**: Use mate wareware instead of dementia, acknowledge wairua (spiritual) aspects
+
+### Chinese Context  
+**Good**: "您好 (Hello). I understand you might be feeling lonely. Your family cares deeply about you. Would you like to tell me about a happy memory?"
+**Cultural Note**: Acknowledge family connections, avoid direct mental health terminology
+
+### Western Context
+**Good**: "Hello there. I can hear you're having a difficult day. Would you like to talk about what's been on your mind?"
+
+**Universal Avoid**: Technical error messages, medical compliance language, rushed responses
+
+## Budget Constraints to Remember
+- Target <$0.10 per user per day for voice processing
+- Prioritize caching and optimization over feature richness
+- Monitor Azure usage and implement alerts
+- Design for graceful degradation to free tiers
+
+## Success Metrics
+- Daily active conversations per user across cultural groups
+- Language switching patterns and cultural preference indicators  
+- Family/whānau satisfaction with culturally appropriate interactions
+- Healthcare facility adoption and cultural sensitivity feedback
+- Cost per meaningful conversation while maintaining cultural authenticity
+- User retention by cultural background
+- Reduction in family caregiver burden through institutional support
+
+## Development Workflow
+- Test with elderly users from each target cultural group early and often
+- Collaborate with cultural consultants and community elders for authentic guidance
+- Prioritize core multilingual voice interaction before advanced features
+- Implement cultural analytics to understand usage patterns across groups
+- Regular cost monitoring while maintaining cultural quality standards
+- Iterative improvement based on real conversations and cultural feedback
+- Build extensible framework for adding new cultural contexts through research
+
+Remember: This app serves as a cultural bridge in healthcare settings where elderly individuals revert to their native language and cultural frameworks. Every interaction should honor their cultural identity while providing the emotional support they need. Technical excellence serves the human mission of culturally-sensitive care and reducing the burden on families who currently have no alternative to home care.
