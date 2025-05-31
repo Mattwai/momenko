@@ -12,12 +12,10 @@ export default function(api) {
           safe: true,
           allowUndefined: false,
           allowlist: [
-            'AI_API_KEY',
-            'AI_API_URL',
+            'DEEPSEEK_API_KEY',
+            'DEEPSEEK_API_URL',
             'SUPABASE_URL',
             'SUPABASE_ANON_KEY',
-            'TWILIO_ACCOUNT_SID',
-            'TWILIO_AUTH_TOKEN'
           ]
         },
       ],
