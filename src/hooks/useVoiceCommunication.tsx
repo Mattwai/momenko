@@ -78,7 +78,7 @@ export const useVoiceCommunication = (options: UseVoiceCommunicationOptions) => 
   const isMounted = useRef<boolean>(true);
 
   // Memoize callback functions to prevent unnecessary re-initialization
-  const memoizedUpdateCallback = useCallback((text, isFinal) => {
+  const memoizedUpdateCallback = useCallback((text: string, isFinal: boolean) => {
     if (!isMounted.current) return;
     
     setState(prev => ({
@@ -92,7 +92,7 @@ export const useVoiceCommunication = (options: UseVoiceCommunicationOptions) => 
     }
   }, [onTranscriptUpdate]);
   
-  const memoizedErrorCallback = useCallback((error) => {
+  const memoizedErrorCallback = useCallback((error: string) => {
     if (!isMounted.current) return;
     
     setState(prev => ({ ...prev, error }));
@@ -130,7 +130,7 @@ export const useVoiceCommunication = (options: UseVoiceCommunicationOptions) => 
     }
   }, [onSpeechEnd]);
   
-  const memoizedAIResponseCallback = useCallback((response) => {
+  const memoizedAIResponseCallback = useCallback((response: string) => {
     if (!isMounted.current) return;
     
     setState(prev => ({
@@ -178,23 +178,36 @@ export const useVoiceCommunication = (options: UseVoiceCommunicationOptions) => 
         
         serviceRef.current = new VoiceCommunicationService(serviceOptions);
         
-        // Wait a moment to ensure initialization
-        await new Promise(resolve => setTimeout(resolve, 300));
+        // Wait for service to fully initialize
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         // Update state
         if (!isMounted.current) return;
         
         if (serviceRef.current) {
           const serviceState = serviceRef.current.getState();
-          setState(prev => ({
-            ...prev,
-            isInitialized: true,
-            isListening: serviceState.isListening,
-            isSpeaking: serviceState.isSpeaking,
-            interimTranscript: serviceState.interimTranscript,
-            finalTranscript: serviceState.finalTranscript,
-            hasConversationHistory: serviceState.hasConversationHistory || false,
-          }));
+          console.log('🔧 Service state after initialization:', serviceState);
+          
+          // Force state update to ensure initialization is reflected
+          setState(prev => {
+            const newState = {
+              ...prev,
+              isInitialized: true,
+              isListening: serviceState.isListening,
+              isSpeaking: serviceState.isSpeaking,
+              interimTranscript: serviceState.interimTranscript,
+              finalTranscript: serviceState.finalTranscript,
+              hasConversationHistory: serviceState.hasConversationHistory || false,
+              error: null // Clear any previous errors
+            };
+            console.log('🔄 Hook state updated:', { 
+              wasInitialized: prev.isInitialized, 
+              nowInitialized: newState.isInitialized 
+            });
+            return newState;
+          });
+          
+          console.log('✅ Voice communication hook initialized successfully');
         }
       } catch (error) {
         if (!isMounted.current) return;
@@ -232,7 +245,7 @@ export const useVoiceCommunication = (options: UseVoiceCommunicationOptions) => 
               await serviceRef.current.cleanup().catch(() => {});
               serviceRef.current = null;
             }
-          } catch (e) {
+          } catch {
             // Ignore cleanup errors
           }
         };
@@ -241,39 +254,22 @@ export const useVoiceCommunication = (options: UseVoiceCommunicationOptions) => 
         performCleanup();
       }
     };
-  }, [
-    preferredLanguage, 
-    voiceId, 
-    modelId, 
-    stability, 
-    similarityBoost, 
-    memoizedUpdateCallback, 
-    memoizedErrorCallback, 
-    memoizedSpeechStartCallback, 
-    memoizedSpeechEndCallback, 
-    memoizedAIResponseCallback
-  ]);
+  }, [preferredLanguage, voiceId, modelId, stability, similarityBoost]);
 
-  // Effect to update audio state when listening/speaking changes
-  useEffect(() => {
-    setState(prev => ({
-      ...prev,
-      audioState: {
-        ...prev.audioState,
-        isRecording: state.isListening,
-        isPlaying: state.isSpeaking
-      }
-    }));
-  }, [state.isListening, state.isSpeaking]);
+
 
   // Method to start listening
   const startListening = useCallback(async () => {
+    console.log('🎤 Start listening called:', { mounted: isMounted.current, initialized: state.isInitialized, listening: state.isListening });
+    
     if (!isMounted.current) {
+      console.log('🚫 Component not mounted, aborting start listening');
       return;
     }
     
     // If service isn't initialized yet or no current service, don't try to start
     if (!serviceRef.current) {
+      console.log('🚫 Service ref not available');
       setState(prev => ({
         ...prev,
         error: 'Voice service not initialized yet. Please try again in a moment.'
@@ -283,6 +279,7 @@ export const useVoiceCommunication = (options: UseVoiceCommunicationOptions) => 
     
     // Don't try to start if already listening
     if (state.isListening) {
+      console.log('🚫 Already listening, ignoring start request');
       return;
     }
     
@@ -302,6 +299,7 @@ export const useVoiceCommunication = (options: UseVoiceCommunicationOptions) => 
       }
       
       // Update UI immediately to provide feedback
+      console.log('🎤 Setting listening state to true');
       setState(prev => ({
         ...prev,
         isListening: true,
@@ -311,9 +309,12 @@ export const useVoiceCommunication = (options: UseVoiceCommunicationOptions) => 
       }));
       
       // Then start the actual listening
+      console.log('🎤 Starting service listening...');
       await serviceRef.current.startListening();
       
       if (!isMounted.current) return;
+      
+      console.log('🎤 Service listening started successfully');
     } catch (error) {
       if (!isMounted.current) return;
       
@@ -428,7 +429,8 @@ export const useVoiceCommunication = (options: UseVoiceCommunicationOptions) => 
       setState(prev => ({
         ...prev,
         error: `Failed to speak: ${errorMessage}`,
-        isSpeaking: false
+        isSpeaking: false,
+        audioState: { ...prev.audioState, isPlaying: false }
       }));
       
       if (onError) {
@@ -461,7 +463,8 @@ export const useVoiceCommunication = (options: UseVoiceCommunicationOptions) => 
       setState(prev => ({
         ...prev,
         error: `Failed to stop speaking: ${errorMessage}`,
-        isSpeaking: false // Force to false even on error
+        isSpeaking: false,
+        audioState: { ...prev.audioState, isPlaying: false }
       }));
       
       if (onError) {

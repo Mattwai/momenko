@@ -156,6 +156,7 @@ export class ReactNativeSpeechService {
     language: PreferredLanguage;
     hasCallbacks: boolean;
     serviceState?: any;
+    isNative: boolean;
   } {
     return {
       isListening: this.isListening,

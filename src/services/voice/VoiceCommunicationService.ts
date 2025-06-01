@@ -26,7 +26,7 @@ export interface SpeechRecognitionResult {
   confidence: number;
 }
 
-interface WebSocketMessage {
+interface _WebSocketMessage {
   type: 'transcript' | 'error' | 'status' | 'audio';
   data: unknown;
 }
@@ -115,8 +115,11 @@ export class VoiceCommunicationService {
     // Initialize conversation with a system message
     this.initializeConversation();
     
-    // Initialize the service
-    this.initialize();
+    // Start initialization but don't wait for it in constructor
+    this.initialize().catch(error => {
+      console.error('Failed to initialize VoiceCommunicationService:', error);
+      this.handleError(`Initialization failed: ${error}`);
+    });
   }
   
   private initializeConversation(): void {
@@ -146,30 +149,44 @@ export class VoiceCommunicationService {
   private initializationComplete = false;
   
   private async initialize(): Promise<void> {
+    console.log('🚀 VoiceCommunicationService initialization starting...');
+    
     // Prevent multiple initialization attempts
     if (this.initializationInProgress) {
+      console.log('⏳ Initialization already in progress, waiting...');
+      // Wait for ongoing initialization to complete
+      while (this.initializationInProgress && !this.initializationComplete) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      console.log('✅ Waited for initialization completion');
       return;
     }
     
-    // If already initialized successfully, don't log again
+    // If already initialized successfully, don't re-initialize
     if (this.initializationComplete) {
+      console.log('✅ Already initialized, setting isInitialized = true');
       this.isInitialized = true;
       return;
     }
     
     this.initializationInProgress = true;
+    console.log('🔧 Starting initialization process...');
     
     try {
       // Check and request audio permissions
+      console.log('🎤 Checking audio permissions...');
       const permissionGranted = await this.audioManager.requestPermissions();
       if (!permissionGranted) {
+        console.error('❌ Audio permissions denied');
         this.handleError('Audio recording permissions not granted');
         this.initializationInProgress = false;
         return;
       }
+      console.log('✅ Audio permissions granted');
 
       // Initialize audio session with proper settings for recording
       try {
+        console.log('🔊 Configuring audio mode...');
         await Audio.setAudioModeAsync({
           allowsRecordingIOS: true,
           playsInSilentModeIOS: true,
@@ -177,52 +194,65 @@ export class VoiceCommunicationService {
           shouldDuckAndroid: true,
           playThroughEarpieceAndroid: false,
         });
+        console.log('✅ Audio session configured');
       } catch (audioError) {
-        console.warn('Error setting audio mode:', audioError);
+        console.warn('⚠️ Error setting audio mode:', audioError);
       }
       
+      console.log('🔧 Configuring audio manager session...');
       await this.audioManager.configureAudioSession();
       
       // Validate that ElevenLabs is configured for voice synthesis
+      console.log('🔑 Checking ElevenLabs API configuration...');
       if (!config.elevenLabs.isConfigured) {
+        console.error('❌ ElevenLabs API not configured');
         this.handleError('ElevenLabs API is not configured. Please add ELEVEN_LABS_API_KEY to your environment.');
         this.initializationInProgress = false;
         return;
       }
+      console.log('✅ ElevenLabs API configured');
       
       // Check if DeepSeek chat API is available (not required but useful)
+      console.log('🔑 Checking DeepSeek API configuration...');
       if (config.deepseek.isConfigured && !this.initializationComplete) {
-        console.log('DeepSeek Chat API configured, key length:', config.deepseek.apiKey.length);
+        console.log('✅ DeepSeek API configured, key length:', config.deepseek.apiKey.length);
       } else if (!config.deepseek.isConfigured && !this.initializationComplete) {
-        console.warn('DeepSeek API not configured. Chat functionality may be limited.');
+        console.warn('⚠️ DeepSeek API not configured. Chat functionality may be limited.');
       }
       
       if (!this.initializationComplete) {
-        console.log('Using device transcription with ElevenLabs voice synthesis');
+        console.log('🎤 Using device transcription with ElevenLabs voice synthesis');
       }
       
+      console.log('🔧 Setting initialization flags...');
       this.isInitialized = true;
       this.initializationComplete = true;
       
-      if (!this.initializationComplete) {
-        console.log('Voice Communication Service initialized successfully');
-      }
+      console.log('🏁 Initialization completed successfully. Success:', this.isInitialized);
+      console.log('📊 Final state:', {
+        isInitialized: this.isInitialized,
+        initializationComplete: this.initializationComplete,
+        language: this.language,
+        voiceId: this.voiceId
+      });
     } catch (error) {
+      console.error('❌ Initialization failed with error:', error);
       this.handleError(`Initialization failed: ${error}`);
+      this.isInitialized = false;
     } finally {
       this.initializationInProgress = false;
+      console.log('🔚 Initialization process finished. Progress flag cleared.');
     }
   }
 
   public async startListening(): Promise<void> {
-    // If not initialized, try to initialize now
+    // If not initialized, try to initialize now and wait for completion
     if (!this.isInitialized) {
       await this.initialize();
       
-      // If still not initialized after attempt, error out
+      // Double-check initialization succeeded
       if (!this.isInitialized) {
-        this.handleError('Service not initialized. Please restart the app or check permissions.');
-        return;
+        throw new Error('Voice Communication Service failed to initialize');
       }
     }
 
@@ -746,6 +776,10 @@ export class VoiceCommunicationService {
         }
       }
       
+      if (!sound) {
+        throw new Error('Failed to create audio sound after retries');
+      }
+      
       this.currentSound = sound;
       
       // Start playing
@@ -774,7 +808,7 @@ export class VoiceCommunicationService {
         if (this.currentSound) {
           try {
             this.currentSound.unloadAsync();
-          } catch (_) {
+          } catch {
             // Ignore errors during cleanup
           }
           this.currentSound = null;

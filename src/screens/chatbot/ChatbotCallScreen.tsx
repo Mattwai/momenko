@@ -33,6 +33,11 @@ const ChatbotCallScreen = () => {
   const isScreenMounted = useRef(true);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Handle navigation back with cleanup
+  const handleNavigateBack = useCallback(() => {
+    navigation.navigate("Main", { screen: "Chatbot" });
+  }, [navigation]);
+
   // Initialize voice communication with cultural preferences
   const {
     isListening,
@@ -41,7 +46,6 @@ const ChatbotCallScreen = () => {
     finalTranscript: _finalTranscript,
     error,
     audioState: _audioState,
-    detectedLanguage: _detectedLanguage,
     isInitialized,
     isSimulatedTranscription,
     startListening,
@@ -50,109 +54,18 @@ const ChatbotCallScreen = () => {
     stopSpeaking,
   } = useVoiceCommunication({
     preferredLanguage: culturalProfile.preferredLanguage as PreferredLanguage,
-    silenceThreshold: 3, // 3 seconds of silence before auto-stop
-    autoStop: true,
     enableTTS: true, // Enable text-to-speech for responses
     onTranscriptUpdate: (text, isFinal) => {
+      console.log('📝 Transcript update:', { text, isFinal });
       setTranscripts((prev) => [...prev, { text, isFinal }]);
     },
-    onLanguageDetected: (language) => {
-      console.log("Detected language:", language);
-    },
     onError: (err) => {
+      console.error('❌ Voice communication error:', err);
       Alert.alert("Voice Recognition Error", err, [
-        { text: "OK", onPress: handleEndCall },
+        { text: "OK", onPress: handleNavigateBack },
       ]);
     },
   });
-
-  // Set up audio mode once at the beginning
-  useEffect(() => {
-    const setupAudio = async () => {
-      try {
-        await Audio.setAudioModeAsync({
-          allowsRecordingIOS: true,
-          playsInSilentModeIOS: true,
-          staysActiveInBackground: false,
-          shouldDuckAndroid: true,
-          playThroughEarpieceAndroid: false,
-        });
-        console.log('Audio mode configured for call screen');
-      } catch (err) {
-        console.warn('Failed to set audio mode:', err);
-      }
-    };
-    
-    setupAudio();
-  }, []);
-
-  // Initialize voice only when the screen is focused and clean up when it's not
-  useFocusEffect(
-    useCallback(() => {
-      isScreenMounted.current = true;
-      
-      // Track app state changes to handle background/foreground transitions
-      const appStateSubscription = AppState.addEventListener('change', nextAppState => {
-        if (nextAppState === 'active') {
-          // App came back to foreground - nothing to do, already mounted
-        } else if (nextAppState === 'background' || nextAppState === 'inactive') {
-          // App went to background - stop voice services
-          stopListening();
-          stopSpeaking();
-        }
-      });
-      
-      // BackHandler to properly clean up when user presses back button
-      const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-        if (isScreenMounted.current) {
-          handleEndCall();
-          return true;
-        }
-        return false;
-      });
-      
-      return () => {
-        // Mark component as unmounted first
-        isScreenMounted.current = false;
-        
-        // Clear timers
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
-          timerRef.current = null;
-        }
-        
-        // Stop voice services
-        stopListening();
-        stopSpeaking();
-        
-        // Remove listeners
-        backHandler.remove();
-        appStateSubscription.remove();
-        
-        // Reset audio mode when leaving
-        Audio.setAudioModeAsync({
-          allowsRecordingIOS: false,
-          playsInSilentModeIOS: false,
-        }).catch(err => console.warn('Error resetting audio mode:', err));
-      };
-    }, [stopListening, stopSpeaking])
-  );
-
-  // Handle call timer
-  useEffect(() => {
-    timerRef.current = setInterval(() => {
-      if (isScreenMounted.current) {
-        setCallSeconds((prev) => prev + 1);
-      }
-    }, 1000);
-    
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    };
-  }, []);
 
   const handleEndCall = useCallback(() => {
     // Prevent multiple calls
@@ -189,6 +102,61 @@ const ChatbotCallScreen = () => {
     // Execute cleanup
     cleanup();
   }, [navigation, stopListening, stopSpeaking, isListening, isSpeaking]);
+
+  // Set up audio mode once at the beginning
+  useEffect(() => {
+    const setupAudio = async () => {
+      try {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: true,
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: false,
+          shouldDuckAndroid: true,
+          playThroughEarpieceAndroid: false,
+        });
+        console.log('🔊 Audio mode configured for call screen');
+      } catch (err) {
+        console.warn('❌ Failed to set audio mode:', err);
+      }
+    };
+    
+    setupAudio();
+  }, []);
+
+  // Initialize voice only when the screen is focused and clean up when it's not
+  useFocusEffect(
+    useCallback(() => {
+      isScreenMounted.current = true;
+      
+      // BackHandler to properly clean up when user presses back button
+      const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+        if (isScreenMounted.current) {
+          handleEndCall();
+          return true;
+        }
+        return false;
+      });
+      
+      return () => {
+        isScreenMounted.current = false;
+        backHandler.remove();
+      };
+    }, [handleEndCall])
+  );
+
+  // Handle call timer
+  useEffect(() => {
+    timerRef.current = setInterval(() => {
+      setCallSeconds((prev) => prev + 1);
+    }, 1000);
+    
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, []);
 
   const toggleListening = useCallback(() => {
     if (!isScreenMounted.current) return;
@@ -282,6 +250,18 @@ const ChatbotCallScreen = () => {
           <View style={styles.deviceBanner}>
             <Text style={styles.deviceText}>
               Using device transcription with ElevenLabs voice
+            </Text>
+          </View>
+        )}
+
+        {/* Debug info */}
+        {__DEV__ && (
+          <View style={styles.debugContainer}>
+            <Text style={styles.debugText}>
+              Debug: Init={isInitialized ? '✅' : '❌'} Listening={isListening ? '🎤' : '🔇'} Speaking={isSpeaking ? '🔊' : '🔇'}
+            </Text>
+            <Text style={styles.debugText}>
+              Timer: {callSeconds}s | Mounted: {isScreenMounted.current ? '✅' : '❌'}
             </Text>
           </View>
         )}
@@ -460,6 +440,18 @@ const styles = StyleSheet.create({
   disabledButton: {
     opacity: 0.5,
     backgroundColor: "#888",
+  },
+  debugContainer: {
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    padding: 8,
+    borderRadius: 4,
+    marginVertical: 8,
+  },
+  debugText: {
+    color: "#fff",
+    fontSize: 12,
+    textAlign: "center",
+    fontFamily: "monospace",
   },
 });
 

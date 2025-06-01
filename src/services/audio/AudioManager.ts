@@ -15,7 +15,7 @@ export class AudioManager {
     this.configureAudioSession();
   }
 
-  private async configureAudioSession() {
+  public async configureAudioSession() {
     try {
       // Reset audio mode first
       try {
@@ -188,7 +188,7 @@ export class AudioManager {
         if (status.isRecording) {
           await this.recording.stopAndUnloadAsync();
         } else if (status.isDoneRecording) {
-          await this.recording.unloadAsync();
+          await this.recording.stopAndUnloadAsync();
         }
       } catch (stopError) {
         console.warn('Error during recording stop:', stopError);
@@ -283,13 +283,13 @@ export class AudioManager {
           if (status.isRecording) {
             await this.recording.stopAndUnloadAsync();
           } else if (status.isDoneRecording) {
-            await this.recording.unloadAsync();
+            await this.recording.stopAndUnloadAsync();
           }
         } catch (statusError) {
           console.warn('Error getting recording status:', statusError);
           // Try direct unload if status check fails
           try {
-            await this.recording.unloadAsync();
+            await this.recording.stopAndUnloadAsync();
           } catch (unloadError) {
             console.warn('Unload also failed, forcing cleanup:', unloadError);
           }

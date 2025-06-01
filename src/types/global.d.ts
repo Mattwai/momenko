@@ -49,6 +49,7 @@ declare global {
   interface globalThis extends CustomGlobal {
     // Node.js/React Native global properties
     __DEV__?: boolean;
+    __FORCE_NATIVE_VOICE__?: boolean;
     webkitAudioContext?: typeof AudioContext;
   }
   

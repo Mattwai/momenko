@@ -1,8 +1,3 @@
----
-description: 
-globs: 
-alwaysApply: true
----
 # Cursor Context Rules - Elderly Care Voice Assistant
 
 ## Project Mission
@@ -15,9 +10,9 @@ You are building a culturally-sensitive voice-based AI companion app for elderly
 - **Emotional Needs**: Companionship, patience, non-judgmental conversation, feeling heard and valued
 
 ## Technical Stack & Constraints
-- **Frontend**: React Native with Expo (cross-platform mobile)
+- **Frontend**: React Native (cross-platform mobile)
 - **Backend**: Supabase (PostgreSQL, real-time subscriptions, auth)
-- **Voice Services**: Azure Cognitive Services (cost-effective, neural voices)
+- **Voice Services**: Elevenlabs (cost-effective, neural voices)
 - **Budget Reality**: Solo developer, must optimize for cost-per-conversation
 - **Scalability Target**: Support hundreds of elderly users without breaking budget
 
@@ -37,7 +32,7 @@ You are building a culturally-sensitive voice-based AI companion app for elderly
 - **Communication Style**: Indirect, story-based, respectful of elders' mana (spiritual power)
 - **Approach**: Focus on supporting whānau rather than treating illness
 
-#### Chinese Cultural Approach  
+#### Chinese Cultural Approach
 - **Family Dynamics**: Filial piety plays essential role in family care decision-making
 - **Stigma Awareness**: Heavy stigma exists in Chinese communities, families often refuse professional help due to cultural values and sense of duty, with negative attitudes toward psychotherapy
 - **Communication Style**: Respectful of hierarchy, indirect approach to sensitive topics
@@ -65,7 +60,7 @@ const culturalProfiles = {
   },
   chinese: {
     preferredTerms: { dementia: "痴呆症" },
-    communicationStyle: "hierarchical_respectful", 
+    communicationStyle: "hierarchical_respectful",
     familyStructure: "filial_piety_based",
     spiritualAspects: "karma_concepts",
     stigmaLevel: "high",
@@ -109,7 +104,7 @@ const culturalProfiles = {
 - Implement silence detection to prevent accidental usage
 - Design conversations to be listening-focused
 - Monitor and optimize per-user costs
-- Prioritize Azure over more expensive services like ElevenLabs
+- Prioritize ElevenLabs for MVP, but optimise for cost-savings
 
 ### 4. Reliability & Safety
 - Graceful degradation when services fail
@@ -121,7 +116,7 @@ const culturalProfiles = {
 
 ### Multilingual Voice Interaction
 - Support for English, Te Reo Māori, and Mandarin Chinese speech recognition
-- Azure Cognitive Services with region-specific accent models
+- Elevenlabs with region-specific accent models
 - Language switching detection within conversations
 - Cultural context-aware responses based on detected language
 - SSML adaptation for each language's prosody patterns
@@ -222,7 +217,7 @@ const culturalProfiles = {
 **Good**: "Kia ora. I can hear you're feeling a bit māuiui today. Would you like to share a kōrero about something that brought you joy recently?"
 **Cultural Note**: Use mate wareware instead of dementia, acknowledge wairua (spiritual) aspects
 
-### Chinese Context  
+### Chinese Context
 **Good**: "您好 (Hello). I understand you might be feeling lonely. Your family cares deeply about you. Would you like to tell me about a happy memory?"
 **Cultural Note**: Acknowledge family connections, avoid direct mental health terminology
 
@@ -234,12 +229,12 @@ const culturalProfiles = {
 ## Budget Constraints to Remember
 - Target <$0.10 per user per day for voice processing
 - Prioritize caching and optimization over feature richness
-- Monitor Azure usage and implement alerts
+- Monitor Elevenlabs and Deepseek usage and implement alerts
 - Design for graceful degradation to free tiers
 
 ## Success Metrics
 - Daily active conversations per user across cultural groups
-- Language switching patterns and cultural preference indicators  
+- Language switching patterns and cultural preference indicators
 - Family/whānau satisfaction with culturally appropriate interactions
 - Healthcare facility adoption and cultural sensitivity feedback
 - Cost per meaningful conversation while maintaining cultural authenticity
