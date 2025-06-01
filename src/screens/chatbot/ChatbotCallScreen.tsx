@@ -158,6 +158,20 @@ const ChatbotCallScreen = () => {
     };
   }, []);
 
+  // Auto-start listening when initialized
+  useEffect(() => {
+    if (isInitialized && !isListening && !isSpeaking && isScreenMounted.current) {
+      console.log('🎤 Auto-starting listening on initialization');
+      const timer = setTimeout(() => {
+        if (isScreenMounted.current && !isListening && !isSpeaking) {
+          startListening();
+        }
+      }, 1500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isInitialized]);
+
   const toggleListening = useCallback(() => {
     if (!isScreenMounted.current) return;
     
@@ -174,19 +188,7 @@ const ChatbotCallScreen = () => {
     if (isListening) {
       stopListening();
     } else {
-      // Set audio mode again just to be sure
-      Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: false,
-        shouldDuckAndroid: true,
-        playThroughEarpieceAndroid: false,
-      }).catch(err => console.warn('Error setting audio mode before listening:', err));
-      
-      // Short delay to ensure audio mode has applied
-      setTimeout(() => {
-        startListening();
-      }, 200);
+      startListening();
     }
   }, [isListening, startListening, stopListening, isInitialized]);
 

@@ -127,7 +127,7 @@ export class VoiceCommunicationService {
     this.conversationHistory = [
       {
         role: 'system',
-        content: 'You are a helpful, friendly assistant providing concise and accurate information. Keep responses relatively brief but informative. Be conversational and natural in your tone.'
+        content: 'You are a helpful, friendly assistant. Respond naturally like a human would in conversation. Keep responses brief and conversational. Do not use emojis, symbols, asterisks, or any formatting. Speak like you are having a casual conversation.'
       }
     ];
   }
@@ -283,21 +283,8 @@ export class VoiceCommunicationService {
       // Start audio recording with silence detection
       await this.audioManager.startRecording(this.handleSilenceDetected.bind(this));
       
-      // Start simulated transcription (since DeepSeek API is unavailable)
-      this.connectWebSocket();
-      
-      // Generate interim transcripts periodically to simulate ongoing recognition
-      setTimeout(() => {
-        if (this.isListening) {
-          this.handleSimulatedTranscript("I'm listening to you...", false);
-        }
-      }, 1500);
-      
-      setTimeout(() => {
-        if (this.isListening) {
-          this.handleSimulatedTranscript("I'm still listening...", false);
-        }
-      }, 3000);
+      // Start audio processing directly
+      this.startAudioProcessing();
     } catch (error) {
       this.isListening = false;
       this.handleError(`Failed to start listening: ${error}`);
@@ -355,88 +342,31 @@ export class VoiceCommunicationService {
       this.silenceTimeout = setTimeout(() => {
         // If we have interim transcript, convert it to final before stopping
         if (this.interimTranscript) {
-          this.handleSimulatedTranscript(this.interimTranscript, true);
+          this.finalTranscript = this.interimTranscript;
+          if (this.onTranscriptUpdate) {
+            this.onTranscriptUpdate(this.interimTranscript, true);
+          }
+          this.interimTranscript = '';
         }
         this.stopListening();
       }, 1500); // 1.5 second delay before stopping
     }
   }
 
-  private connectWebSocket(): void {
-    // Instead of using DeepSeek WebSocket API (which is unavailable),
-    // we'll simulate transcription locally with device speech recognition
-    
-    // Set up a simulation timer for interim results
-    setTimeout(() => {
-      if (this.isListening) {
-        const simulatedTranscript = "I'm listening...";
-        this.handleSimulatedTranscript(simulatedTranscript, false);
-      }
-    }, 1000);
-    
-    // Set up audio processing from the microphone
-    this.startAudioProcessing();
-  }
+
   
   private startAudioProcessing(): void {
-    // This method processes audio from the microphone and simulates transcription
-    // by generating interim and final results
-
-    // Generate realistic "listening" experience with interim results
-    let simulationStep = 0;
-    const simulateInterim = () => {
-      if (!this.isListening) return;
-      
-      // Realistic typing simulation
-      const placeholders = [
-        "...",
-        "I'm listening...",
-        "Processing your speech...",
-        "Continue speaking..."
-      ];
-      
-      this.handleSimulatedTranscript(placeholders[simulationStep % placeholders.length], false);
-      simulationStep++;
-      
-      // Continue simulation while listening
-      if (this.isListening) {
-        setTimeout(simulateInterim, 1500);
-      }
-    };
-    
-    // Start simulation
-    setTimeout(simulateInterim, 1000);
-    
-    // Set up silence detection to finalize transcripts
-    const silenceTimer = setTimeout(() => {
-      if (this.isListening && this.interimTranscript) {
-        // Finalize the current transcript after silence
-        this.handleSimulatedTranscript(this.interimTranscript, true);
-        this.interimTranscript = '';
-      }
-    }, 4000);
-    
-    // Store cleanup function for later
-    this.silenceTimeout = silenceTimer;
-  }
-  
-  private handleSimulatedTranscript(text: string, isFinal: boolean): void {
     if (!this.isListening) return;
     
-    // Process the transcript similar to how we would with real transcription
-    if (isFinal) {
-      this.finalTranscript = text;
-      
-      if (this.onTranscriptUpdate) {
-        this.onTranscriptUpdate(text, true);
-      }
-    } else {
-      this.interimTranscript = text;
-      
-      if (this.onTranscriptUpdate) {
-        this.onTranscriptUpdate(text, false);
-      }
-    }
+    // Start audio recording with silence detection
+    this.audioManager.startRecording(this.handleSilenceDetected.bind(this))
+      .then(() => {
+        console.log('🎤 Audio recording started successfully');
+      })
+      .catch(error => {
+        console.error('Failed to start audio recording:', error);
+        this.handleError(`Failed to start recording: ${error}`);
+      });
   }
   
   // Remove the setupWebSocketHandlers method as it's no longer needed
@@ -471,33 +401,9 @@ export class VoiceCommunicationService {
       console.log(`Processing audio file: ${fileUri}`);
       
       // Instead of random phrases, use a more context-aware approach
-      // Try to generate a transcript that makes sense based on recording duration
-      const recordingDuration = this.lastRecordingDuration || 3000;
-      let simulatedTranscript = "";
-      
-      if (recordingDuration < 1500) {
-        // Short recordings - likely just confirmations or simple questions
-        const shortPhrases = [
-          "Yes.",
-          "No.",
-          "Maybe.",
-          "Can you help me?",
-          "I don't understand.",
-          "Please continue."
-        ];
-        simulatedTranscript = shortPhrases[Math.floor(Math.random() * shortPhrases.length)];
-      } else {
-        // Longer recordings - more complex statements
-        const longPhrases = [
-          "I'd like to learn more about this topic. Can you provide more details?",
-          "That's very interesting. I'm curious about how this works in practice.",
-          "Could you explain that in simpler terms? I'm not sure I fully understand.",
-          "I have a question about what you just mentioned. Can you elaborate?",
-          "I'm looking for specific information about this subject. What resources do you recommend?",
-          "That makes sense. Let me think about how to apply this information."
-        ];
-        simulatedTranscript = longPhrases[Math.floor(Math.random() * longPhrases.length)];
-      }
+      // For now, use a simple placeholder until real speech recognition is implemented
+      // In a real implementation, this would use iOS Speech Framework to transcribe the audio
+      const simulatedTranscript = "Hello";
       
       // Store duration for better voice analysis
       this.lastRecordingDuration = 0;
@@ -517,7 +423,30 @@ export class VoiceCommunicationService {
         await this.sendToDeepSeekChat(simulatedTranscript);
       }
     } catch (error) {
-      this.handleError(`Failed to process audio file: ${error}`);
+      console.error('Error processing audio file:', error);
+      this.handleError(`Failed to process audio: ${error}`);
+    }
+  }
+  
+  private async processWithNativeSpeechRecognition(fileUri: string): Promise<string> {
+    try {
+      // Read audio file as base64
+      const audioBase64 = await FileSystem.readAsStringAsync(fileUri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      
+      // TODO: Implement actual iOS Speech Framework integration
+      // For now, we'll use a simple approach that indicates we received audio
+      // but can't transcribe it without native speech recognition
+      
+      console.log('🎤 Audio file processed, length:', audioBase64.length);
+      
+      // Return a placeholder that indicates the system is working
+      // but needs proper speech recognition implementation
+      return "Audio received but speech recognition needs native implementation";
+    } catch (error) {
+      console.error('Error processing audio with speech recognition:', error);
+      return "Error processing speech";
     }
   }
   
