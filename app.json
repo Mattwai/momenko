@@ -14,13 +14,19 @@
     "assetBundlePatterns": [
       "**/*"
     ],
+    "jsEngine": "hermes",
+    "experiments": {
+      "tsconfigPaths": true
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.mattwai.momenko",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "This app needs access to the microphone for voice interactions.",
         "NSCameraUsageDescription": "This app needs access to camera for video calls with caregivers.",
-        "NSPhotoLibraryUsageDescription": "This app needs access to photos for sharing memories with caregivers."
+        "NSPhotoLibraryUsageDescription": "This app needs access to photos for sharing memories with caregivers.",
+        "NSSpeechRecognitionUsageDescription": "This app uses speech recognition for real-time conversation.",
+        "UIBackgroundModes": ["audio"]
       }
     },
     "android": {
@@ -35,7 +41,9 @@
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
-        "NOTIFICATIONS"
+        "NOTIFICATIONS",
+        "MODIFY_AUDIO_SETTINGS",
+        "FOREGROUND_SERVICE"
       ]
     },
     "web": {
@@ -49,7 +57,23 @@
           "icon": "./assets/notification-icon.png",
           "color": "#ffffff"
         }
+      ],
+      "expo-dev-client",
+      "expo-file-system",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
       ]
-    ]
+    ],
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/your-project-id"
+    }
   }
 }
