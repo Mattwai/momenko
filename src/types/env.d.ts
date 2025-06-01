@@ -1,8 +1,9 @@
-declare module '@env' {
-  export const AI_API_KEY: string;
-  export const AI_API_URL: string;
+declare module "@env" {
+  export const DEEPSEEK_API_KEY: string;
+  export const DEEPSEEK_API_URL: string;
   export const SUPABASE_URL: string;
   export const SUPABASE_ANON_KEY: string;
-  export const TWILIO_ACCOUNT_SID: string;
-  export const TWILIO_AUTH_TOKEN: string;
-} 
+  export const ELEVEN_LABS_API_KEY: string;
+  export const APP_ENV: string;
+  export const DEBUG_MODE: string;
+}

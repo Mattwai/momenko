@@ -1,26 +1,27 @@
-export default function(api) {
+export default function (api) {
   api.cache(true);
   return {
-    presets: ['babel-preset-expo'],
+    presets: ["babel-preset-expo"],
     plugins: [
       [
-        'module:react-native-dotenv',
+        "module:react-native-dotenv",
         {
-          envName: 'development',
-          moduleName: '@env',
-          path: '.env.development',
+          envName: "development",
+          moduleName: "@env",
+          path: ".env.development",
           safe: true,
           allowUndefined: false,
           allowlist: [
-            'AI_API_KEY',
-            'AI_API_URL',
-            'SUPABASE_URL',
-            'SUPABASE_ANON_KEY',
-            'TWILIO_ACCOUNT_SID',
-            'TWILIO_AUTH_TOKEN'
-          ]
+            "DEEPSEEK_API_KEY",
+            "DEEPSEEK_API_URL",
+            "SUPABASE_URL",
+            "SUPABASE_ANON_KEY",
+            "ELEVEN_LABS_API_KEY",
+            "APP_ENV",
+            "DEBUG_MODE",
+          ],
         },
       ],
     ],
   };
-} 
+}

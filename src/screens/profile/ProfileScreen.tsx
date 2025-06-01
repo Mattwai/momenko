@@ -47,11 +47,6 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       onPress: () => navigation.navigate('Memories'),
     },
     {
-      title: 'Cognitive Assessment',
-      icon: 'clipboard-text',
-      onPress: () => navigation.navigate('CognitiveAssessment'),
-    },
-    {
       title: 'Personal Information',
       icon: 'account',
       onPress: () => navigation.navigate('PersonalInformation'),
@@ -111,19 +106,6 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
               />
             </Animatable.View>
           ))}
-        </View>
-
-        <View style={styles.section}>
-          <Button
-            mode="contained"
-            icon="account-group"
-            style={styles.familyButton}
-            labelStyle={{ fontSize: 20 }}
-            onPress={() => navigation.navigate('Family')}
-            accessibilityLabel="Go to Family Dashboard"
-          >
-            Family Dashboard
-          </Button>
         </View>
 
         <View style={styles.section}>
@@ -217,14 +199,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04,
     shadowRadius: 4,
     elevation: 2,
-  },
-  familyButton: {
-    backgroundColor: '#6366F1',
-    borderRadius: 16,
-    marginVertical: 8,
-    width: '100%',
-    alignSelf: 'center',
-    paddingVertical: 12,
   },
   logoutButton: {
     marginTop: 24,

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { AI_API_KEY, AI_API_URL } from '@env';
+import { DEEPSEEK_API_KEY, DEEPSEEK_API_URL } from '@env';
 import { fetchUserMemories, addUserMemory } from '../supabase/profile';
 import yaml from 'js-yaml';
 
@@ -23,8 +23,8 @@ class AIService {
   private apiUrl: string;
 
   constructor() {
-    this.apiKey = AI_API_KEY;
-    this.apiUrl = AI_API_URL;
+    this.apiKey = DEEPSEEK_API_KEY;
+    this.apiUrl = DEEPSEEK_API_URL;
   }
 
   async generateResponse(userInput: string) {

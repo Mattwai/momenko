@@ -1,28 +1,79 @@
 {
   "expo": {
-    "name": "momenko",
+    "name": "Momenko",
     "slug": "momenko",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": false,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "jsEngine": "hermes",
+    "experiments": {
+      "tsconfigPaths": true
+    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mattwai.momenko",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "This app needs access to the microphone for voice interactions.",
+        "NSCameraUsageDescription": "This app needs access to camera for video calls with caregivers.",
+        "NSPhotoLibraryUsageDescription": "This app needs access to photos for sharing memories with caregivers.",
+        "NSSpeechRecognitionUsageDescription": "This app uses speech recognition for real-time conversation.",
+        "UIBackgroundModes": ["audio"]
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.mattwai.momenko",
+      "permissions": [
+        "INTERNET",
+        "RECORD_AUDIO",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "NOTIFICATIONS",
+        "MODIFY_AUDIO_SETTINGS",
+        "FOREGROUND_SERVICE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-av",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#ffffff"
+        }
+      ],
+      "expo-dev-client",
+      "expo-file-system",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ]
+    ],
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/your-project-id"
     }
   }
 }

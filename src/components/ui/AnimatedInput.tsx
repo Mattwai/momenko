@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, KeyboardTypeOptions } from 'react-native';
 import { TextInput } from 'react-native-paper';
 import * as Animatable from 'react-native-animatable';
 
@@ -10,6 +10,7 @@ interface AnimatedInputProps {
   secureTextEntry?: boolean;
   error?: string;
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  keyboardType?: KeyboardTypeOptions;
 }
 
 export const AnimatedInput = ({
@@ -19,6 +20,7 @@ export const AnimatedInput = ({
   secureTextEntry,
   error,
   autoCapitalize = 'none',
+  keyboardType,
 }: AnimatedInputProps) => {
   return (
     <Animatable.View animation="fadeInUp" duration={800} useNativeDriver>
@@ -29,6 +31,7 @@ export const AnimatedInput = ({
         secureTextEntry={secureTextEntry}
         error={!!error}
         autoCapitalize={autoCapitalize}
+        keyboardType={keyboardType}
         style={styles.input}
         mode="outlined"
       />
