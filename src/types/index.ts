@@ -9,10 +9,22 @@ import type {
   AudioState,
 } from "./conversation";
 import type { Database } from "./database";
+import type {
+  NotificationType,
+  NotificationPriority,
+  NotificationChannel,
+  ScheduledNotification,
+  NotificationPreferences,
+  CheckInSchedule,
+  FamilyNotification,
+  CaregiverAlert,
+  WellnessIndicator,
+} from "./notifications";
 
 export * from "./cultural";
 export * from "./conversation";
 export * from "./database";
+export * from "./notifications";
 
 // Re-export commonly used types
 export type {
@@ -23,4 +35,13 @@ export type {
   ConversationMessage,
   AudioState,
   Database,
+  NotificationType,
+  NotificationPriority,
+  NotificationChannel,
+  ScheduledNotification,
+  NotificationPreferences,
+  CheckInSchedule,
+  FamilyNotification,
+  CaregiverAlert,
+  WellnessIndicator,
 };
