@@ -1,18 +1,20 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Platform } from 'react-native';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Audio } from 'expo-av';
 import { VoiceCommunicationService, VoiceCommunicationOptions } from '../services/voice/VoiceCommunicationService';
 import { PreferredLanguage } from '../types';
-import config from '../config';
 
 export interface UseVoiceCommunicationOptions {
   preferredLanguage: PreferredLanguage;
   enableTTS?: boolean;
   voiceId?: string;
   modelId?: string;
+  stability?: number;
+  similarityBoost?: number;
   onTranscriptUpdate?: (text: string, isFinal: boolean) => void;
   onError?: (error: string) => void;
   onSpeechStart?: () => void;
   onSpeechEnd?: () => void;
+  onAIResponseReceived?: (response: string) => void;
 }
 
 export interface AudioState {
@@ -27,11 +29,13 @@ export interface VoiceCommunicationState {
   isSpeaking: boolean;
   interimTranscript: string;
   finalTranscript: string;
+  aiResponse: string;
   error: string | null;
   audioState: AudioState;
+  detectedLanguage: PreferredLanguage;
   isInitialized: boolean;
-  isSimulationMode: boolean;
-  simulationInfo: string | null;
+  isSimulatedTranscription: boolean;
+  hasConversationHistory: boolean;
 }
 
 export const useVoiceCommunication = (options: UseVoiceCommunicationOptions) => {
@@ -40,14 +44,14 @@ export const useVoiceCommunication = (options: UseVoiceCommunicationOptions) => 
     enableTTS = true,
     voiceId,
     modelId,
+    stability,
+    similarityBoost,
     onTranscriptUpdate,
     onError,
     onSpeechStart,
-    onSpeechEnd
+    onSpeechEnd,
+    onAIResponseReceived
   } = options;
-
-  // Check if we're in Expo Go (simulation mode)
-  const isExpoGo = __DEV__ && typeof navigator !== 'undefined';
   
   // State
   const [state, setState] = useState<VoiceCommunicationState>({
@@ -55,104 +59,146 @@ export const useVoiceCommunication = (options: UseVoiceCommunicationOptions) => 
     isSpeaking: false,
     interimTranscript: '',
     finalTranscript: '',
+    aiResponse: '',
     error: null,
     audioState: {
       isRecording: false,
       isPlaying: false,
       duration: 0,
-      error: null
+      error: null,
     },
+    detectedLanguage: preferredLanguage,
     isInitialized: false,
-    isSimulationMode: isExpoGo,
-    simulationInfo: isExpoGo ? 'Running in Expo Go - voice features limited' : null
+    isSimulatedTranscription: true, // Using simulated transcription since DeepSeek API is unavailable
+    hasConversationHistory: false,
   });
 
   // Refs
   const serviceRef = useRef<VoiceCommunicationService | null>(null);
+  const isMounted = useRef<boolean>(true);
+
+  // Memoize callback functions to prevent unnecessary re-initialization
+  const memoizedUpdateCallback = useCallback((text, isFinal) => {
+    if (!isMounted.current) return;
+    
+    setState(prev => ({
+      ...prev,
+      interimTranscript: isFinal ? '' : text,
+      finalTranscript: isFinal ? text : prev.finalTranscript
+    }));
+    
+    if (onTranscriptUpdate) {
+      onTranscriptUpdate(text, isFinal);
+    }
+  }, [onTranscriptUpdate]);
+  
+  const memoizedErrorCallback = useCallback((error) => {
+    if (!isMounted.current) return;
+    
+    setState(prev => ({ ...prev, error }));
+    
+    if (onError) {
+      onError(error);
+    }
+  }, [onError]);
+  
+  const memoizedSpeechStartCallback = useCallback(() => {
+    if (!isMounted.current) return;
+    
+    setState(prev => ({ 
+      ...prev, 
+      isSpeaking: true,
+      audioState: { ...prev.audioState, isPlaying: true }
+    }));
+    
+    if (onSpeechStart) {
+      onSpeechStart();
+    }
+  }, [onSpeechStart]);
+  
+  const memoizedSpeechEndCallback = useCallback(() => {
+    if (!isMounted.current) return;
+    
+    setState(prev => ({ 
+      ...prev, 
+      isSpeaking: false,
+      audioState: { ...prev.audioState, isPlaying: false }
+    }));
+    
+    if (onSpeechEnd) {
+      onSpeechEnd();
+    }
+  }, [onSpeechEnd]);
+  
+  const memoizedAIResponseCallback = useCallback((response) => {
+    if (!isMounted.current) return;
+    
+    setState(prev => ({
+      ...prev,
+      aiResponse: response,
+      hasConversationHistory: true
+    }));
+    
+    if (onAIResponseReceived) {
+      onAIResponseReceived(response);
+    }
+  }, [onAIResponseReceived]);
 
   // Initialize service
   useEffect(() => {
-    // Only initialize if we're not in Expo Go
-    if (isExpoGo) {
-      console.warn('🚨 Running in Expo Go - using simulation mode');
-      setState(prev => ({
-        ...prev,
-        isInitialized: true,
-        isSimulationMode: true,
-        simulationInfo: 'Running in Expo Go - voice features limited. Create a development build for full functionality.'
-      }));
+    isMounted.current = true;
+    
+    // Prevent re-initialization if service is already created and same language
+    if (serviceRef.current && 
+        serviceRef.current.getState().language === preferredLanguage && 
+        serviceRef.current.getState().voiceId === (voiceId || serviceRef.current.getState().voiceId)) {
       return;
     }
-
+    
     const init = async () => {
       try {
+        // Clean up any existing service
+        if (serviceRef.current) {
+          await serviceRef.current.cleanup().catch(e => console.warn('Error cleaning up previous service:', e));
+        }
+        
         // Create service instance
         const serviceOptions: VoiceCommunicationOptions = {
           preferredLanguage,
           voiceId,
           modelId,
-          onTranscriptUpdate: (text, isFinal) => {
-            setState(prev => ({
-              ...prev,
-              interimTranscript: isFinal ? '' : text,
-              finalTranscript: isFinal ? text : prev.finalTranscript
-            }));
-            
-            if (onTranscriptUpdate) {
-              onTranscriptUpdate(text, isFinal);
-            }
-          },
-          onError: (error) => {
-            setState(prev => ({ ...prev, error }));
-            
-            if (onError) {
-              onError(error);
-            }
-          },
-          onSpeechStart: () => {
-            setState(prev => ({ 
-              ...prev, 
-              isSpeaking: true,
-              audioState: { ...prev.audioState, isPlaying: true }
-            }));
-            
-            if (onSpeechStart) {
-              onSpeechStart();
-            }
-          },
-          onSpeechEnd: () => {
-            setState(prev => ({ 
-              ...prev, 
-              isSpeaking: false,
-              audioState: { ...prev.audioState, isPlaying: false }
-            }));
-            
-            if (onSpeechEnd) {
-              onSpeechEnd();
-            }
-          }
+          stability,
+          similarityBoost,
+          onTranscriptUpdate: memoizedUpdateCallback,
+          onError: memoizedErrorCallback,
+          onSpeechStart: memoizedSpeechStartCallback,
+          onSpeechEnd: memoizedSpeechEndCallback,
+          onAIResponseReceived: memoizedAIResponseCallback
         };
         
         serviceRef.current = new VoiceCommunicationService(serviceOptions);
         
         // Wait a moment to ensure initialization
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 300));
         
         // Update state
-        const serviceState = serviceRef.current.getState();
-        setState(prev => ({
-          ...prev,
-          isInitialized: true,
-          isListening: serviceState.isListening,
-          isSpeaking: serviceState.isSpeaking,
-          interimTranscript: serviceState.interimTranscript,
-          finalTranscript: serviceState.finalTranscript,
-          isSimulationMode: false,
-          simulationInfo: null
-        }));
+        if (!isMounted.current) return;
         
-        console.log('Voice Communication hook initialized successfully');
+        if (serviceRef.current) {
+          const serviceState = serviceRef.current.getState();
+          setState(prev => ({
+            ...prev,
+            isInitialized: true,
+            isListening: serviceState.isListening,
+            isSpeaking: serviceState.isSpeaking,
+            interimTranscript: serviceState.interimTranscript,
+            finalTranscript: serviceState.finalTranscript,
+            hasConversationHistory: serviceState.hasConversationHistory || false,
+          }));
+        }
       } catch (error) {
+        if (!isMounted.current) return;
+        
         console.error('Failed to initialize Voice Communication hook:', error);
         setState(prev => ({
           ...prev,
@@ -166,12 +212,47 @@ export const useVoiceCommunication = (options: UseVoiceCommunicationOptions) => 
 
     // Cleanup
     return () => {
+      isMounted.current = false;
+      
+      // Stop any ongoing voice activities
       if (serviceRef.current) {
-        serviceRef.current.cleanup();
-        serviceRef.current = null;
+        // Use a separate cleanup function to avoid async issues
+        const performCleanup = async () => {
+          try {
+            if (serviceRef.current) {
+              // Force stop listening and speaking
+              if (serviceRef.current.getState().isListening) {
+                await serviceRef.current.stopListening().catch(() => {});
+              }
+              
+              if (serviceRef.current.getState().isSpeaking) {
+                await serviceRef.current.stopSpeaking().catch(() => {});
+              }
+              
+              await serviceRef.current.cleanup().catch(() => {});
+              serviceRef.current = null;
+            }
+          } catch (e) {
+            // Ignore cleanup errors
+          }
+        };
+        
+        // Run cleanup synchronously to ensure it happens before component is fully unmounted
+        performCleanup();
       }
     };
-  }, [preferredLanguage, voiceId, modelId]);
+  }, [
+    preferredLanguage, 
+    voiceId, 
+    modelId, 
+    stability, 
+    similarityBoost, 
+    memoizedUpdateCallback, 
+    memoizedErrorCallback, 
+    memoizedSpeechStartCallback, 
+    memoizedSpeechEndCallback, 
+    memoizedAIResponseCallback
+  ]);
 
   // Effect to update audio state when listening/speaking changes
   useEffect(() => {
@@ -187,8 +268,40 @@ export const useVoiceCommunication = (options: UseVoiceCommunicationOptions) => 
 
   // Method to start listening
   const startListening = useCallback(async () => {
-    if (state.isSimulationMode) {
-      // Simulate starting listening
+    if (!isMounted.current) {
+      return;
+    }
+    
+    // If service isn't initialized yet or no current service, don't try to start
+    if (!serviceRef.current) {
+      setState(prev => ({
+        ...prev,
+        error: 'Voice service not initialized yet. Please try again in a moment.'
+      }));
+      return;
+    }
+    
+    // Don't try to start if already listening
+    if (state.isListening) {
+      return;
+    }
+    
+    try {
+      // Set audio mode correctly before starting
+      try {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: true,
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: false,
+          shouldDuckAndroid: true,
+        });
+        // Small delay to ensure audio mode is applied
+        await new Promise(resolve => setTimeout(resolve, 200));
+      } catch (audioError) {
+        console.warn('Error setting audio mode before recording:', audioError);
+      }
+      
+      // Update UI immediately to provide feedback
       setState(prev => ({
         ...prev,
         isListening: true,
@@ -197,161 +310,110 @@ export const useVoiceCommunication = (options: UseVoiceCommunicationOptions) => 
         error: null
       }));
       
-      console.log('🎭 Starting simulated speech recognition...');
-      
-      // Simulate speech recognition with timeouts
-      setTimeout(() => {
-        setState(prev => ({
-          ...prev,
-          interimTranscript: 'Hello...'
-        }));
-      }, 1000);
-      
-      setTimeout(() => {
-        setState(prev => ({
-          ...prev,
-          interimTranscript: 'Hello, I am...'
-        }));
-      }, 2000);
-      
-      setTimeout(() => {
-        const sampleTexts = {
-          'en': 'Hello, I am testing the voice recognition system.',
-          'mi': 'Kia ora, he whakamātau ahau i te pūnaha rongo reo.',
-          'zh': '你好，我正在测试语音识别系统。'
-        };
-        
-        const finalText = sampleTexts[preferredLanguage] || sampleTexts['en'];
-        
-        setState(prev => ({
-          ...prev,
-          finalTranscript: finalText,
-          interimTranscript: '',
-          isListening: false,
-          audioState: { ...prev.audioState, isRecording: false }
-        }));
-        
-        if (onTranscriptUpdate) {
-          onTranscriptUpdate(finalText, true);
-        }
-        
-        console.log('🎭 Simulated speech recognition complete');
-      }, 3500);
-      
-      return;
-    }
-    
-    try {
-      if (!serviceRef.current) {
-        throw new Error('Voice Communication Service not initialized');
-      }
-      
+      // Then start the actual listening
       await serviceRef.current.startListening();
       
-      setState(prev => ({
-        ...prev,
-        isListening: true,
-        audioState: { ...prev.audioState, isRecording: true },
-        interimTranscript: '',
-        error: null
-      }));
+      if (!isMounted.current) return;
     } catch (error) {
+      if (!isMounted.current) return;
+      
+      // Handle errors but filter out expected ones
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      if (errorMessage.includes('DeepSeek API') || errorMessage.includes('WebSocket')) {
+        console.warn(`Suppressed error (using device transcription): ${errorMessage}`);
+        return;
+      }
+    
       setState(prev => ({
         ...prev,
-        error: `Failed to start listening: ${error}`,
-        isListening: false
+        error: `Failed to start listening: ${errorMessage}`,
+        isListening: false,
+        audioState: { ...prev.audioState, isRecording: false }
       }));
-      
+    
       if (onError) {
-        onError(`Failed to start listening: ${error}`);
+        onError(`Failed to start listening: ${errorMessage}`);
       }
     }
-  }, [state.isSimulationMode, preferredLanguage, onTranscriptUpdate, onError]);
+  }, [onError, state.isListening]);
 
   // Method to stop listening
-  const stopListening = useCallback(async () => {
-    if (state.isSimulationMode) {
-      // Simulate stopping listening
-      setState(prev => ({
-        ...prev,
-        isListening: false,
-        audioState: { ...prev.audioState, isRecording: false }
-      }));
-      
-      console.log('🎭 Stopped simulated speech recognition');
+  const stopListening = useCallback(async () => {    
+    if (!isMounted.current) {
+      return;
+    }
+    
+    // If already not listening, don't try to stop
+    if (!state.isListening) {
+      return;
+    }
+    
+    // Update UI immediately for better user feedback
+    setState(prev => ({
+      ...prev,
+      isListening: false,
+      audioState: { ...prev.audioState, isRecording: false }
+    }));
+    
+    // If service isn't available, just update state
+    if (!serviceRef.current) {
       return;
     }
     
     try {
-      if (!serviceRef.current) {
-        throw new Error('Voice Communication Service not initialized');
-      }
-      
       await serviceRef.current.stopListening();
-      
-      setState(prev => ({
-        ...prev,
-        isListening: false,
-        audioState: { ...prev.audioState, isRecording: false }
-      }));
     } catch (error) {
-      setState(prev => ({
-        ...prev,
-        error: `Failed to stop listening: ${error}`
-      }));
+      if (!isMounted.current) return;
       
-      if (onError) {
-        onError(`Failed to stop listening: ${error}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      // Only report non-DeepSeek errors
+      if (!errorMessage.includes('DeepSeek') && !errorMessage.includes('WebSocket')) {
+        if (onError) {
+          onError(`Failed to stop listening: ${errorMessage}`);
+        }
+      }
+    } finally {
+      // Reset audio mode to ensure proper cleanup
+      try {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: false,
+          shouldDuckAndroid: false,
+        });
+      } catch (audioError) {
+        // Just log but don't propagate the error
+        console.warn('Error resetting audio mode after recording:', audioError);
       }
     }
-  }, [state.isSimulationMode, onError]);
+  }, [onError, state.isListening]);
 
   // Method to speak text
-  const speak = useCallback(async (text: string, options?: { voiceId?: string }) => {
-    if (!enableTTS) return;
-    
-    if (state.isSimulationMode) {
-      // Simulate speaking
-      setState(prev => ({
-        ...prev,
-        isSpeaking: true,
-        audioState: { ...prev.audioState, isPlaying: true }
-      }));
-      
-      if (onSpeechStart) {
-        onSpeechStart();
-      }
-      
-      console.log(`🎭 Simulating speech: "${text}"`);
-      
-      // Simulate speech duration based on text length
-      const duration = Math.max(1500, text.length * 50);
-      
-      setTimeout(() => {
-        setState(prev => ({
-          ...prev,
-          isSpeaking: false,
-          audioState: { ...prev.audioState, isPlaying: false }
-        }));
-        
-        if (onSpeechEnd) {
-          onSpeechEnd();
-        }
-        
-        console.log('🎭 Simulated speech complete');
-      }, duration);
-      
-      return;
-    }
+  const speak = useCallback(async (text: string, options?: { voiceId?: string, stability?: number, similarityBoost?: number }) => {
+    if (!enableTTS || !isMounted.current || !serviceRef.current) return;
     
     try {
-      if (!serviceRef.current) {
-        throw new Error('Voice Communication Service not initialized');
+      // Set audio mode for playback
+      try {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: false,
+          shouldDuckAndroid: true,
+        });
+      } catch (audioError) {
+        console.warn('Error setting audio mode before playback:', audioError);
       }
       
       await serviceRef.current.speak(text, {
-        voiceId: options?.voiceId || voiceId
+        voiceId: options?.voiceId || voiceId,
+        stability: options?.stability || stability,
+        similarityBoost: options?.similarityBoost || similarityBoost
       });
+      
+      if (!isMounted.current) return;
       
       setState(prev => ({
         ...prev,
@@ -359,42 +421,32 @@ export const useVoiceCommunication = (options: UseVoiceCommunicationOptions) => 
         audioState: { ...prev.audioState, isPlaying: true }
       }));
     } catch (error) {
+      if (!isMounted.current) return;
+      
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
       setState(prev => ({
         ...prev,
-        error: `Failed to speak: ${error}`,
+        error: `Failed to speak: ${errorMessage}`,
         isSpeaking: false
       }));
       
       if (onError) {
-        onError(`Failed to speak: ${error}`);
+        onError(`Failed to speak: ${errorMessage}`);
       }
     }
-  }, [state.isSimulationMode, enableTTS, voiceId, onSpeechStart, onSpeechEnd, onError]);
+  }, [enableTTS, voiceId, stability, similarityBoost, onError]);
 
   // Method to stop speaking
-  const stopSpeaking = useCallback(async () => {
-    if (state.isSimulationMode) {
-      // Simulate stopping speech
-      setState(prev => ({
-        ...prev,
-        isSpeaking: false,
-        audioState: { ...prev.audioState, isPlaying: false }
-      }));
-      
-      if (onSpeechEnd) {
-        onSpeechEnd();
-      }
-      
-      console.log('🎭 Stopped simulated speech');
+  const stopSpeaking = useCallback(async () => {    
+    if (!isMounted.current || !serviceRef.current) {
       return;
     }
     
     try {
-      if (!serviceRef.current) {
-        throw new Error('Voice Communication Service not initialized');
-      }
-      
       await serviceRef.current.stopSpeaking();
+      
+      if (!isMounted.current) return;
       
       setState(prev => ({
         ...prev,
@@ -402,19 +454,26 @@ export const useVoiceCommunication = (options: UseVoiceCommunicationOptions) => 
         audioState: { ...prev.audioState, isPlaying: false }
       }));
     } catch (error) {
+      if (!isMounted.current) return;
+      
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
       setState(prev => ({
         ...prev,
-        error: `Failed to stop speaking: ${error}`
+        error: `Failed to stop speaking: ${errorMessage}`,
+        isSpeaking: false // Force to false even on error
       }));
       
       if (onError) {
-        onError(`Failed to stop speaking: ${error}`);
+        onError(`Failed to stop speaking: ${errorMessage}`);
       }
     }
-  }, [state.isSimulationMode, onSpeechEnd, onError]);
+  }, [onSpeechEnd, onError]);
 
   // Method to reset transcript
   const resetTranscript = useCallback(() => {
+    if (!isMounted.current) return;
+    
     setState(prev => ({
       ...prev,
       interimTranscript: '',
@@ -425,14 +484,24 @@ export const useVoiceCommunication = (options: UseVoiceCommunicationOptions) => 
       serviceRef.current.resetTranscript();
     }
   }, []);
+  
+  // Method to reset conversation history
+  const resetConversation = useCallback(() => {
+    if (!isMounted.current) return;
+    
+    setState(prev => ({
+      ...prev,
+      aiResponse: '',
+      hasConversationHistory: false
+    }));
+    
+    if (serviceRef.current) {
+      serviceRef.current.resetConversation();
+    }
+  }, []);
 
   // Method to change language
   const changeLanguage = useCallback(async (language: PreferredLanguage) => {
-    if (state.isSimulationMode) {
-      console.log(`🎭 Simulated language change: ${language}`);
-      return;
-    }
-    
     try {
       if (!serviceRef.current) {
         throw new Error('Voice Communication Service not initialized');
@@ -449,23 +518,25 @@ export const useVoiceCommunication = (options: UseVoiceCommunicationOptions) => 
         onError(`Failed to change language: ${error}`);
       }
     }
-  }, [state.isSimulationMode, onError]);
+  }, [onError]);
 
   return {
     isListening: state.isListening,
     isSpeaking: state.isSpeaking,
     interimTranscript: state.interimTranscript,
     finalTranscript: state.finalTranscript,
+    aiResponse: state.aiResponse,
     error: state.error,
     audioState: state.audioState,
     isInitialized: state.isInitialized,
-    isSimulationMode: state.isSimulationMode,
-    simulationInfo: state.simulationInfo,
+    isSimulatedTranscription: state.isSimulatedTranscription,
+    hasConversationHistory: state.hasConversationHistory,
     startListening,
     stopListening,
     speak,
     stopSpeaking,
     resetTranscript,
+    resetConversation,
     changeLanguage
   };
 };

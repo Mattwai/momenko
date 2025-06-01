@@ -1,11 +1,6 @@
-import { AZURE_SPEECH_KEY, AZURE_SPEECH_REGION, SUPABASE_URL, SUPABASE_ANON_KEY, DEEPSEEK_API_KEY, DEEPSEEK_API_URL, ELEVEN_LABS_API_KEY, APP_ENV, DEBUG_MODE } from '@env';
+import { SUPABASE_URL, SUPABASE_ANON_KEY, DEEPSEEK_API_KEY, DEEPSEEK_API_URL, ELEVEN_LABS_API_KEY, APP_ENV, DEBUG_MODE } from '@env';
 
 export interface AppConfig {
-  azure: {
-    speechKey: string;
-    speechRegion: string;
-    isConfigured: boolean;
-  };
   supabase: {
     url: string;
     anonKey: string;
@@ -38,8 +33,6 @@ export interface AppConfig {
     defaultSilenceTimeout: number; // seconds
     maxTranscriptLength: number;
     recognitionTimeoutMs: number;
-    useNativeSpeech: boolean;
-    fallbackToAzure: boolean;
   };
 }
 
@@ -52,13 +45,6 @@ const validateEnvVar = (value: string | undefined, name: string): string => {
 };
 
 const config: AppConfig = {
-  azure: {
-    speechKey: validateEnvVar(AZURE_SPEECH_KEY, 'AZURE_SPEECH_KEY'),
-    speechRegion: validateEnvVar(AZURE_SPEECH_REGION, 'AZURE_SPEECH_REGION'),
-    get isConfigured() {
-      return !!(this.speechKey && this.speechRegion);
-    }
-  },
   supabase: {
     url: validateEnvVar(SUPABASE_URL, 'SUPABASE_URL'),
     anonKey: validateEnvVar(SUPABASE_ANON_KEY, 'SUPABASE_ANON_KEY'),
@@ -101,8 +87,6 @@ const config: AppConfig = {
     defaultSilenceTimeout: 3, // seconds
     maxTranscriptLength: 5000,
     recognitionTimeoutMs: 300000, // 5 minutes
-    useNativeSpeech: true, // Use React Native speech recognition by default
-    fallbackToAzure: false, // Don't fallback to Azure unless explicitly enabled
   }
 };
 
@@ -110,17 +94,16 @@ const config: AppConfig = {
 export const validateConfiguration = (): { isValid: boolean; errors: string[] } => {
   const errors: string[] = [];
 
-  // Azure is now optional since we use React Native speech recognition
-  // Only warn if Azure is configured but incomplete
-  if (config.azure.speechKey && !config.azure.speechRegion) {
-    errors.push('Azure Speech Service region missing (key provided but no region)');
-  }
-  if (!config.azure.speechKey && config.azure.speechRegion) {
-    errors.push('Azure Speech Service key missing (region provided but no key)');
-  }
-
   if (!config.supabase.isConfigured) {
     errors.push('Supabase credentials not configured');
+  }
+  
+  if (!config.deepseek.isConfigured) {
+    errors.push('DeepSeek API not configured');
+  }
+  
+  if (!config.elevenLabs.isConfigured) {
+    errors.push('ElevenLabs API not configured');
   }
 
   return {
@@ -133,11 +116,14 @@ export const validateConfiguration = (): { isValid: boolean; errors: string[] } 
 export const logConfigurationStatus = (): void => {
   if (config.app.debugMode) {
     console.log('Configuration Status:', {
-      azure: {
-        configured: config.azure.isConfigured,
-        region: config.azure.speechRegion,
-        keyLength: config.azure.speechKey.length,
-        optional: true
+      deepseek: {
+        configured: config.deepseek.isConfigured,
+        url: config.deepseek.apiUrl,
+        keyLength: config.deepseek.apiKey ? config.deepseek.apiKey.length : 0
+      },
+      elevenLabs: {
+        configured: config.elevenLabs.isConfigured,
+        keyLength: config.elevenLabs.apiKey ? config.elevenLabs.apiKey.length : 0
       },
       supabase: {
         configured: config.supabase.isConfigured,
@@ -145,8 +131,6 @@ export const logConfigurationStatus = (): void => {
         keyLength: config.supabase.anonKey.length
       },
       voice: {
-        useNativeSpeech: config.voice.useNativeSpeech,
-        fallbackToAzure: config.voice.fallbackToAzure,
         autoStopOnSilence: config.voice.autoStopOnSilence
       },
       app: {

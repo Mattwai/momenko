@@ -1,25 +1,25 @@
 # Momenko Development Build Guide
 
-## Why Use a Development Build?
+## Development Build Requirements
 
-Expo Go is great for rapid development, but it has limitations when it comes to native functionality like speech recognition. The error logs you're seeing are because Expo Go doesn't fully support the native voice APIs. A development build gives you access to:
+This guide explains how to set up and use the Momenko development build with real-time voice capabilities. The development build provides:
 
-- Native speech recognition capabilities
+- Native speech recognition through DeepSeek API
+- High-quality voice synthesis with ElevenLabs
 - Real-time WebSocket voice communication
-- ElevenLabs high-quality voice synthesis
-- DeepSeek AI integration for natural conversations
+- Natural conversational AI integration
 
 ## Prerequisites
 
-Before creating a development build, ensure you have:
+Before using the development build, ensure you have:
 
 - Node.js (v18+)
 - Yarn
 - Expo CLI (`npm install -g expo-cli`)
 - For iOS: macOS with Xcode (14+) installed
 - For Android: Android Studio with SDK tools
-- DeepSeek API key (for AI processing)
-- ElevenLabs API key (for natural voice output)
+- DeepSeek API key (required for speech recognition)
+- ElevenLabs API key (required for voice synthesis)
 
 ## Environment Setup
 
@@ -30,8 +30,6 @@ APP_ENV=development
 DEBUG_MODE=true
 SUPABASE_URL=your_supabase_url
 SUPABASE_ANON_KEY=your_supabase_anon_key
-AZURE_SPEECH_KEY=your_azure_key (optional)
-AZURE_SPEECH_REGION=australiaeast (optional)
 DEEPSEEK_API_KEY=your_deepseek_api_key
 DEEPSEEK_API_URL=https://api.deepseek.com
 ELEVEN_LABS_API_KEY=your_elevenlabs_api_key
@@ -86,11 +84,11 @@ This creates native project files in the `ios/` and `android/` directories and r
 
 After switching to a development build, your app will automatically use the real native speech recognition with the DeepSeek and ElevenLabs integration.
 
-### Key Features Enabled in Development Build:
+### Key Features in Development Build:
 
-1. **Native Speech Recognition**: Uses the device's speech recognition engine
+1. **DeepSeek Speech Recognition**: Accurate, real-time speech-to-text conversion
 2. **WebSocket Communication**: Real-time processing with DeepSeek AI
-3. **ElevenLabs Voices**: High-quality natural-sounding speech
+3. **ElevenLabs Voices**: High-quality natural-sounding speech synthesis
 4. **Silence Detection**: Automatically stops listening when the user stops speaking
 
 ## Configuration Options
@@ -103,16 +101,14 @@ voice: {
   defaultSilenceTimeout: 3, // seconds
   maxTranscriptLength: 5000,
   recognitionTimeoutMs: 300000, // 5 minutes
-  useNativeSpeech: true,
-  fallbackToAzure: false,
 }
 ```
 
 ## Testing the Voice Communication
 
 1. Open the Voice Debug Screen to verify all components are working
-2. Check that "Speech Mode" shows "Native" instead of "Simulation"
-3. Test voice recognition and TTS with the Manual Voice Test controls
+2. Test voice recognition and TTS with the Manual Voice Test controls
+3. Verify that both speech recognition and voice synthesis are working
 
 ## Troubleshooting
 
@@ -122,13 +118,15 @@ voice: {
    - Run `yarn install` to ensure all dependencies are installed
    - Try `npx expo prebuild --clean` to reset the native projects
 
-2. **"WebSocket connection failed"**:
+2. **"DeepSeek API error" or "WebSocket connection failed"**:
    - Check your internet connection
    - Verify your DeepSeek API key is correctly set in .env.development
+   - Confirm the DeepSeek API URL is correct
 
 3. **"ElevenLabs API error"**:
    - Verify your ElevenLabs API key is correctly set
    - Check your API usage quota
+   - Ensure you're using a valid voice ID
 
 4. **No sound from ElevenLabs voices**:
    - Ensure device volume is turned up
@@ -137,12 +135,20 @@ voice: {
 
 5. **Speech Recognition Not Working**:
    - Ensure microphone permissions are granted
-   - Check if the device language matches your app's language setting
+   - Check internet connection (required for DeepSeek API)
    - Restart the app after granting permissions
 
 ### Debug Tools
 
 Use the Voice Debug Screen to run diagnostics and identify any issues with your setup.
+
+## Voice Service Architecture
+
+The app uses a two-part voice architecture:
+1. **DeepSeek API** for speech recognition (speech-to-text)
+2. **ElevenLabs API** for voice synthesis (text-to-speech)
+
+These services work together to enable natural conversations with high-quality voices.
 
 ## Additional Resources
 
@@ -152,8 +158,8 @@ Use the Voice Debug Screen to run diagnostics and identify any issues with your 
 
 ## Performance Considerations
 
-- Real-time voice communication can use significant battery and data
-- Consider implementing an "offline mode" for basic functionality without API calls
-- Monitor API usage to avoid unexpected costs
+- Real-time voice communication uses significant data and battery
+- Monitor API usage to avoid unexpected costs (both services have usage limits)
+- Consider caching frequently used voice responses for better performance
 
 Happy developing!

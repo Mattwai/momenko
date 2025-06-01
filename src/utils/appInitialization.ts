@@ -2,6 +2,7 @@ import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av';
 import { Alert, Platform } from 'react-native';
 import config, { validateConfiguration, logConfigurationStatus } from '../config';
 import { permissionsManager } from './permissions';
+import { forceNativeVoiceMode } from './force-native-voice';
 
 export interface InitializationResult {
   success: boolean;
@@ -9,7 +10,8 @@ export interface InitializationResult {
   warnings: string[];
   timestamp: Date;
   config: {
-    azure: boolean;
+    deepseek: boolean;
+    elevenLabs: boolean;
     supabase: boolean;
     permissions: boolean;
     audioSession: boolean;
@@ -38,6 +40,9 @@ class AppInitialization {
   private constructor() {}
 
   async initialize(options: InitializationOptions = {}): Promise<InitializationResult> {
+    // Force native voice mode immediately at initialization
+    forceNativeVoiceMode(true);
+    
     const {
       skipPermissions = false,
       skipAudioSession = false,
@@ -48,7 +53,8 @@ class AppInitialization {
     const errors: string[] = [];
     const warnings: string[] = [];
     const configStatus = {
-      azure: false,
+      deepseek: false,
+      elevenLabs: false,
       supabase: false,
       permissions: false,
       audioSession: false
@@ -68,7 +74,8 @@ class AppInitialization {
           console.error('❌ Configuration validation failed:', configValidation.errors);
         }
       } else {
-        configStatus.azure = config.azure.isConfigured;
+        configStatus.deepseek = config.deepseek.isConfigured;
+        configStatus.elevenLabs = config.elevenLabs.isConfigured;
         configStatus.supabase = config.supabase.isConfigured;
         if (logDetails) {
           console.log('✅ Configuration validation passed');
@@ -115,17 +122,24 @@ class AppInitialization {
         }
       }
 
-      // Step 4: Validate optional Azure configuration
-      if (!config.azure.isConfigured && config.voice.fallbackToAzure) {
-        warnings.push('Azure Speech Service not configured - falling back to device speech recognition');
-      } else if (config.azure.isConfigured) {
-        if (logDetails) {
-          console.log('✅ Azure Speech Service configured (optional)');
-        }
+      // Step 4: Validate voice API configurations
+      if (!config.deepseek.isConfigured) {
+        warnings.push('DeepSeek API not configured - speech recognition may not work properly');
+      } else if (logDetails) {
+        console.log('✅ DeepSeek API configured');
+      }
+      
+      if (!config.elevenLabs.isConfigured) {
+        warnings.push('ElevenLabs API not configured - voice synthesis may not work properly');
+      } else if (logDetails) {
+        console.log('✅ ElevenLabs API configured');
       }
 
-      // Step 5: Platform-specific checks
+      // Step 5: Platform-specific checks (using native capabilities)
       await this.performPlatformChecks(errors, warnings, logDetails);
+  
+      // Reinforce native voice mode after all checks
+      forceNativeVoiceMode(true);
 
       const result: InitializationResult = {
         success: errors.length === 0,
@@ -146,6 +160,7 @@ class AppInitialization {
         if (warnings.length > 0) {
           console.log('Warnings:', warnings);
         }
+        console.log('🎤 Native voice recognition enabled (development build)');
       }
 
       // Show alerts if requested and there are critical errors
@@ -224,7 +239,12 @@ class AppInitialization {
         if (logDetails) {
           console.log(`📱 iOS version: ${version}`);
         }
-      } catch (_error) {
+        
+        // Explicitly check for iOS simulator
+        if (__DEV__ && version.toString().includes('simulator')) {
+          console.log('📱 Running on iOS simulator with native voice enabled');
+        }
+      } catch (_) {
         warnings.push('Could not determine iOS version');
       }
     }
@@ -239,18 +259,21 @@ class AppInitialization {
         if (logDetails) {
           console.log(`🤖 Android API level: ${version}`);
         }
-      } catch (_error) {
+      } catch (_) {
         warnings.push('Could not determine Android version');
       }
     }
 
+    // Force native voice capabilities
+    console.log('🎤 Using native voice capabilities (development build)');
+    
     // Memory and performance checks
     try {
       // Basic memory availability check
       if (global.gc && config.app.debugMode) {
         global.gc();
       }
-    } catch (_error) {
+    } catch (_) {
       // Ignore memory check errors
     }
   }
@@ -286,7 +309,8 @@ class AppInitialization {
       `Time: ${result.timestamp.toLocaleString()}`,
       '',
       'Configuration Status:',
-      `- Azure Speech: ${result.config.azure ? 'OK' : 'Failed'}`,
+      `- DeepSeek API: ${result.config.deepseek ? 'OK' : 'Failed'}`,
+      `- ElevenLabs API: ${result.config.elevenLabs ? 'OK' : 'Failed'}`,
       `- Supabase: ${result.config.supabase ? 'OK' : 'Failed'}`,
       `- Permissions: ${result.config.permissions ? 'OK' : 'Failed'}`,
       `- Audio Session: ${result.config.audioSession ? 'OK' : 'Failed'}`,

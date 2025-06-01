@@ -1,4 +1,4 @@
-import { Audio, AVPlaybackStatus, InterruptionModeAndroid, InterruptionModeIOS } from 'expo-av';
+import { Audio, AVPlaybackStatus } from 'expo-av';
 import { AudioState } from '../../types';
 import config from '../../config';
 import { permissionsManager } from '../../utils/permissions';
@@ -17,12 +17,27 @@ export class AudioManager {
 
   private async configureAudioSession() {
     try {
+      // Reset audio mode first
+      try {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          playsInSilentModeIOS: false,
+          staysActiveInBackground: false,
+          shouldDuckAndroid: false,
+          playThroughEarpieceAndroid: false,
+        });
+        
+        // Small delay to ensure mode change is processed
+        await new Promise(resolve => setTimeout(resolve, 200));
+      } catch (resetError) {
+        console.warn('Error resetting audio mode:', resetError);
+      }
+      
+      // Set recording mode
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
         staysActiveInBackground: false,
-        interruptionModeIOS: InterruptionModeIOS.DoNotMix,
-        interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
         shouldDuckAndroid: true,
         playThroughEarpieceAndroid: false,
       });
@@ -45,19 +60,27 @@ export class AudioManager {
 
   async startRecording(onSilenceDetected?: () => void): Promise<void> {
     try {
-      // Clean up any existing recording first
+      // Make absolutely sure we clean up any existing recording first
       if (this.recording) {
-        await this.stopRecording();
+        try {
+          await this.stopRecording();
+        } catch (err) {
+          console.warn('Error stopping previous recording:', err);
+        } finally {
+          // Force null the recording object regardless of errors
+          this.recording = null;
+        }
+        
+        // Always add a delay to ensure resources are released
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
+
+      // Force audio session reconfiguration
+      await this.configureAudioSession();
 
       const permissionGranted = await this.requestPermissions();
       if (!permissionGranted) {
         throw new Error('Audio recording permissions not granted');
-      }
-
-      // Ensure audio session is configured
-      if (!this.isInitialized) {
-        await this.configureAudioSession();
       }
 
       this.onSilenceDetected = onSilenceDetected || null;
@@ -67,8 +90,6 @@ export class AudioManager {
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
         staysActiveInBackground: false,
-        interruptionModeIOS: InterruptionModeIOS.DoNotMix,
-        interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
         shouldDuckAndroid: true,
         playThroughEarpieceAndroid: false,
       });
@@ -99,14 +120,17 @@ export class AudioManager {
         },
       };
 
-      const recording = new Audio.Recording();
-      await recording.prepareToRecordAsync(recordingOptions);
-      
-      // Set up recording status updates for silence detection
-      recording.setOnRecordingStatusUpdate(this.handleRecordingStatusUpdate);
-      
-      await recording.startAsync();
-      this.recording = recording;
+      // Only create a new recording if we don't have one
+      if (!this.recording) {
+        const recording = new Audio.Recording();
+        await recording.prepareToRecordAsync(recordingOptions);
+        
+        // Set up recording status updates for silence detection
+        recording.setOnRecordingStatusUpdate(this.handleRecordingStatusUpdate);
+        
+        await recording.startAsync();
+        this.recording = recording;
+      }
     } catch (error) {
       console.error('Error starting recording:', error);
       await this.cleanup();
@@ -146,6 +170,8 @@ export class AudioManager {
       return '';
     }
 
+    let uri = '';
+    
     try {
       // Clear silence timer first
       if (this.silenceTimer) {
@@ -153,22 +179,58 @@ export class AudioManager {
         this.silenceTimer = null;
       }
 
-      await this.recording.stopAndUnloadAsync();
-      const uri = this.recording.getURI();
+      // Get the URI before stopping (in case stopping fails)
+      uri = this.recording.getURI() || '';
+
+      try {
+        // Check if recording is actually recording before trying to stop
+        const status = await this.recording.getStatusAsync();
+        if (status.isRecording) {
+          await this.recording.stopAndUnloadAsync();
+        } else if (status.isDoneRecording) {
+          await this.recording.unloadAsync();
+        }
+      } catch (stopError) {
+        console.warn('Error during recording stop:', stopError);
+        // Continue with cleanup despite errors
+      }
+      
+      // Make sure to clear the reference
       this.recording = null;
 
-      return uri || '';
+      // Add a small delay after stopping
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      return uri;
     } catch (error) {
       console.error('Error stopping recording:', error);
+      // Force cleanup in case of error
       this.recording = null;
-      return '';
+      return uri; // Return URI if we got it, even if there was an error
     }
   }
 
   async playAudio(uri: string): Promise<void> {
     try {
       if (this.player) {
-        await this.player.unloadAsync();
+        try {
+          await this.player.unloadAsync();
+        } catch (error) {
+          console.warn('Error unloading previous sound:', error);
+        }
+        this.player = null;
+      }
+
+      // Configure audio session for playback
+      try {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: false,
+          shouldDuckAndroid: true,
+        });
+      } catch (modeError) {
+        console.warn('Error setting audio mode for playback:', modeError);
       }
 
       const { sound } = await Audio.Sound.createAsync(
@@ -216,11 +278,28 @@ export class AudioManager {
     // Clean up recording
     if (this.recording) {
       try {
-        await this.recording.stopAndUnloadAsync();
+        try {
+          const status = await this.recording.getStatusAsync();
+          if (status.isRecording) {
+            await this.recording.stopAndUnloadAsync();
+          } else if (status.isDoneRecording) {
+            await this.recording.unloadAsync();
+          }
+        } catch (statusError) {
+          console.warn('Error getting recording status:', statusError);
+          // Try direct unload if status check fails
+          try {
+            await this.recording.unloadAsync();
+          } catch (unloadError) {
+            console.warn('Unload also failed, forcing cleanup:', unloadError);
+          }
+        }
       } catch (error) {
         console.error('Error cleaning up recording:', error);
+      } finally {
+        // Always ensure recording is null regardless of errors
+        this.recording = null;
       }
-      this.recording = null;
     }
 
     // Clean up player
@@ -229,11 +308,33 @@ export class AudioManager {
         await this.player.unloadAsync();
       } catch (error) {
         console.error('Error cleaning up player:', error);
+      } finally {
+        // Always ensure player is null
+        this.player = null;
       }
-      this.player = null;
     }
 
     this.onSilenceDetected = null;
+    
+    // Reset audio session
+    try {
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: false,
+        playsInSilentModeIOS: false,
+        staysActiveInBackground: false,
+        shouldDuckAndroid: false,
+      });
+      
+      // Reset initialized state to force reconfiguration next time
+      this.isInitialized = false;
+      
+      // Allow time for audio session to reset
+      await new Promise(resolve => setTimeout(resolve, 300));
+    } catch (error) {
+      console.error('Error resetting audio session:', error);
+      // Reset initialized state even on error
+      this.isInitialized = false;
+    }
   }
 
   getAudioState(): AudioState {

@@ -1,9 +1,10 @@
 import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from 'expo-av';
+import { Platform } from 'react-native';
 import { AudioManager } from '../services/audio/AudioManager';
-import { ReactNativeSpeechService } from '../services/speech/ReactNativeSpeechService';
 import { permissionsManager } from './permissions';
 import config, { validateConfiguration, logConfigurationStatus } from '../config';
 import { PreferredLanguage } from '../types';
+import { VoiceCommunicationService } from '../services/voice/VoiceCommunicationService';
 
 export interface VoiceTestResult {
   test: string;
@@ -46,8 +47,8 @@ export class VoiceTestUtils {
     // Test 3: Audio session setup
     results.push(await this.testAudioSession());
 
-    // Test 4: React Native Speech Service initialization
-    results.push(await this.testReactNativeSpeechService(language));
+    // Test 4: DeepSeek and ElevenLabs API validation
+    results.push(await this.testAPIConfiguration());
 
     // Test 5: AudioManager initialization
     results.push(await this.testAudioManager());
@@ -55,8 +56,8 @@ export class VoiceTestUtils {
     // Test 6: Basic recording test
     results.push(await this.testBasicRecording());
 
-    // Test 7: Voice recognition pipeline
-    results.push(await this.testVoiceRecognitionPipeline(language));
+    // Test 7: Voice communication service initialization
+    results.push(await this.testVoiceCommunicationService(language));
 
     const passed = results.filter(r => r.passed).length;
     const failed = results.filter(r => !r.passed).length;
@@ -84,7 +85,8 @@ export class VoiceTestUtils {
           ? 'All required configuration is valid'
           : `Configuration errors: ${validation.errors.join(', ')}`,
         details: {
-          azure: config.azure.isConfigured,
+          deepseek: config.deepseek.isConfigured,
+          elevenLabs: config.elevenLabs.isConfigured,
           supabase: config.supabase.isConfigured,
           errors: validation.errors
         }
@@ -161,53 +163,50 @@ export class VoiceTestUtils {
     }
   }
 
-  private async testReactNativeSpeechService(language: PreferredLanguage): Promise<VoiceTestResult> {
-    let speechService: ReactNativeSpeechService | null = null;
-    
+  private async testAPIConfiguration(): Promise<VoiceTestResult> {
     try {
-      const isSupported = await ReactNativeSpeechService.isSupported();
+      // Check if DeepSeek and ElevenLabs APIs are configured
+      const deepseekConfigured = config.deepseek.isConfigured;
+      const elevenLabsConfigured = config.elevenLabs.isConfigured;
       
-      speechService = new ReactNativeSpeechService({
-        language: language
-      });
-
-      const supportedLanguages = await ReactNativeSpeechService.getSupportedLanguages();
-      const isSimulationMode = __DEV__ || typeof navigator !== 'undefined';
+      const passed = deepseekConfigured && elevenLabsConfigured;
+      let message = '';
+      
+      if (passed) {
+        message = 'DeepSeek and ElevenLabs APIs are properly configured';
+      } else {
+        if (!deepseekConfigured && !elevenLabsConfigured) {
+          message = 'Both DeepSeek and ElevenLabs APIs are not configured';
+        } else if (!deepseekConfigured) {
+          message = 'DeepSeek API is not configured';
+        } else {
+          message = 'ElevenLabs API is not configured';
+        }
+      }
 
       return {
-        test: 'React Native Speech Service',
-        passed: true,
-        message: isSimulationMode 
-          ? 'Speech Service initialized in simulation mode (Expo Go compatible)'
-          : 'React Native Speech Service initialized successfully',
+        test: 'API Configuration',
+        passed,
+        message,
         details: {
-          language,
-          supported: true,
-          simulationMode: isSimulationMode,
-          supportedLanguages: supportedLanguages.slice(0, 5), // Show first 5 languages
-          totalLanguages: supportedLanguages.length,
-          note: isSimulationMode ? 'Running in Expo Go - simulation mode active' : 'Native speech recognition available'
+          deepseek: {
+            configured: deepseekConfigured,
+            apiUrl: config.deepseek.apiUrl,
+            keyLength: config.deepseek.apiKey ? config.deepseek.apiKey.length : 0
+          },
+          elevenLabs: {
+            configured: elevenLabsConfigured,
+            keyLength: config.elevenLabs.apiKey ? config.elevenLabs.apiKey.length : 0
+          }
         }
       };
     } catch (error) {
       return {
-        test: 'React Native Speech Service',
+        test: 'API Configuration',
         passed: false,
-        message: `Speech Service initialization failed: ${error}`,
-        details: { 
-          error,
-          language,
-          supported: false
-        }
+        message: `API configuration test failed: ${error}`,
+        details: { error }
       };
-    } finally {
-      if (speechService) {
-        try {
-          await speechService.cleanup();
-        } catch (cleanupError) {
-          console.warn('Error cleaning up speech service during test:', cleanupError);
-        }
-      }
     }
   }
 
@@ -291,93 +290,52 @@ export class VoiceTestUtils {
     }
   }
 
-  private async testVoiceRecognitionPipeline(language: PreferredLanguage): Promise<VoiceTestResult> {
-    let audioManager: AudioManager | null = null;
-    let speechService: ReactNativeSpeechService | null = null;
+  private async testVoiceCommunicationService(language: PreferredLanguage): Promise<VoiceTestResult> {
+    let voiceService: VoiceCommunicationService | null = null;
     
     try {
-      audioManager = new AudioManager();
-      speechService = new ReactNativeSpeechService({ language });
+      // Create instance of VoiceCommunicationService with test options
+      voiceService = new VoiceCommunicationService({
+        preferredLanguage: language,
+        onTranscriptUpdate: () => {},
+        onError: () => {},
+        onSpeechStart: () => {},
+        onSpeechEnd: () => {}
+      });
 
-      let interimResults: string[] = [];
-      let finalResults: string[] = [];
-      let errors: string[] = [];
-
-      const handleInterim = (text: string) => {
-        interimResults.push(text);
-      };
-
-      const handleFinal = (text: string) => {
-        finalResults.push(text);
-      };
-
-      const handleError = (error: string) => {
-        errors.push(error);
-      };
-
-      // Start the pipeline
-      await speechService.startContinuousRecognition(
-        handleInterim,
-        handleFinal,
-        handleError
-      );
-
-      await audioManager.startRecording();
-
-      // Run for 5 seconds (longer for simulation)
-      await new Promise(resolve => setTimeout(resolve, 5000));
-
-      // Stop everything
-      await audioManager.stopRecording();
-      await speechService.stopContinuousRecognition();
-
-      const hasResults = interimResults.length > 0 || finalResults.length > 0;
-      const hasErrors = errors.length > 0;
-      const isSimulationMode = __DEV__ || typeof navigator !== 'undefined';
-
+      // Wait a moment for initialization
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Get service state
+      const serviceState = voiceService.getState();
+      
       return {
-        test: 'Voice Recognition Pipeline',
-        passed: !hasErrors, // Pass if no errors occurred
-        message: hasErrors 
-          ? `Pipeline test failed with errors: ${errors.join(', ')}`
-          : hasResults
-            ? isSimulationMode 
-              ? 'Pipeline test successful - simulation completed'
-              : 'Pipeline test successful - voice input detected'
-            : isSimulationMode
-              ? 'Pipeline test completed - simulation mode (no real audio input expected)'
-              : 'Pipeline test completed - no voice input detected (this is normal in test environment)',
+        test: 'Voice Communication Service',
+        passed: serviceState.isInitialized,
+        message: serviceState.isInitialized 
+          ? 'Voice Communication Service initialized successfully'
+          : 'Voice Communication Service failed to initialize',
         details: {
-          interimResults,
-          finalResults,
-          errors,
           language,
-          duration: 5000,
-          simulationMode: isSimulationMode,
-          note: isSimulationMode ? 'Running in Expo Go simulation mode' : 'Native speech recognition test'
+          state: serviceState,
+          voiceId: serviceState.voiceId,
+          modelId: serviceState.modelId
         }
       };
     } catch (error) {
       return {
-        test: 'Voice Recognition Pipeline',
+        test: 'Voice Communication Service',
         passed: false,
-        message: `Pipeline test failed: ${error}`,
+        message: `Voice Communication Service test failed: ${error}`,
         details: { error, language }
       };
     } finally {
       // Cleanup
-      if (speechService) {
+      if (voiceService) {
         try {
-          await speechService.cleanup();
+          await voiceService.cleanup();
         } catch (cleanupError) {
-          console.warn('Error cleaning up speech service during pipeline test:', cleanupError);
-        }
-      }
-      if (audioManager) {
-        try {
-          await audioManager.cleanup();
-        } catch (cleanupError) {
-          console.warn('Error cleaning up audio manager during pipeline test:', cleanupError);
+          console.warn('Error cleaning up voice service during test:', cleanupError);
         }
       }
     }
@@ -421,24 +379,16 @@ export class VoiceTestUtils {
     diagnostic.push('');
     diagnostic.push('=== Configuration Details ===');
     
-    // Check if running in Expo Go
-    const isExpoGo = __DEV__ || typeof navigator !== 'undefined';
-    diagnostic.push(`Platform: ${isExpoGo ? 'Expo Go (Simulation Mode)' : 'Native Build'}`);
-    
-    // Check speech recognition support
-    try {
-      const speechSupported = await ReactNativeSpeechService.isSupported();
-      diagnostic.push(`Speech Recognition: ${speechSupported ? 'SUPPORTED' : 'NOT SUPPORTED'}`);
-      if (speechSupported) {
-        const languages = await ReactNativeSpeechService.getSupportedLanguages();
-        diagnostic.push(`Supported Languages: ${languages.length} available`);
-        if (isExpoGo) {
-          diagnostic.push(`Mode: Simulation (for real speech, create development build)`);
-        }
-      }
-    } catch (error) {
-      diagnostic.push(`Speech Recognition: ERROR - ${error}`);
+    // Check API configuration
+    diagnostic.push(`DeepSeek API: ${config.deepseek.isConfigured ? 'CONFIGURED' : 'NOT CONFIGURED'}`);
+    if (config.deepseek.isConfigured) {
+      diagnostic.push(`  API URL: ${config.deepseek.apiUrl}`);
     }
+    
+    diagnostic.push(`ElevenLabs API: ${config.elevenLabs.isConfigured ? 'CONFIGURED' : 'NOT CONFIGURED'}`);
+    
+    diagnostic.push(`Platform: ${Platform.OS}`);
+    diagnostic.push(`OS Version: ${Platform.Version}`);
     diagnostic.push(`Sample Rate: ${config.audio.sampleRate}`);
     diagnostic.push(`Bit Rate: ${config.audio.bitRate}`);
     diagnostic.push(`Debug Mode: ${config.app.debugMode}`);

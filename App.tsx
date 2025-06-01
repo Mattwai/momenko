@@ -1,4 +1,6 @@
 import './polyfills';
+// Force native voice mode at the earliest possible point
+import './src/utils/force-native-voice';
 import React from 'react';
 import { View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
@@ -81,6 +83,7 @@ const App = () => {
   React.useEffect(() => {
     const initialize = async () => {
       try {
+        // Initialize app with native voice support
         const result: InitializationResult = await initializeApp({
           showAlerts: false, // We'll handle errors in UI
           logDetails: true,
@@ -89,7 +92,7 @@ const App = () => {
         if (!result.success && result.errors.length > 0) {
           // Only set error for critical failures
           const criticalErrors = result.errors.filter(error => 
-            error.includes('Azure') || error.includes('Configuration')
+            error.includes('Configuration') || error.includes('DeepSeek') || error.includes('ElevenLabs')
           );
           if (criticalErrors.length > 0) {
             setInitializationError(criticalErrors[0]);
@@ -143,7 +146,7 @@ const App = () => {
                   const result = await initializeApp({ showAlerts: false, logDetails: true });
                   if (!result.success && result.errors.length > 0) {
                     const criticalErrors = result.errors.filter(error => 
-                      error.includes('Azure') || error.includes('Configuration')
+                      error.includes('Configuration') || error.includes('DeepSeek') || error.includes('ElevenLabs')
                     );
                     if (criticalErrors.length > 0) {
                       setInitializationError(criticalErrors[0]);
