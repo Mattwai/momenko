@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Text, Button, Card } from 'react-native-paper';
-import AccessibilitySettings from '../../components/ui/AccessibilitySettings';
+import SettingsPreferences from '../../components/ui/SettingsPreferences';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../../App';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,8 +15,19 @@ interface Props {
 }
 
 const SettingsScreen: React.FC<Props> = ({ navigation }) => {
-  const [highContrast, setHighContrast] = useState(false);
-  const [largeText, setLargeText] = useState(true);
+  const [isHighContrast, setIsHighContrast] = useState(false);
+  const [textSize, setTextSize] = useState<'small' | 'medium' | 'large' | 'extra-large'>('large');
+
+  const handleSettingsChange = (settings: any) => {
+    console.log('Settings changed:', settings);
+    // TODO: Persist settings to storage
+    if (settings.isHighContrast !== undefined) {
+      setIsHighContrast(settings.isHighContrast);
+    }
+    if (settings.textSize !== undefined) {
+      setTextSize(settings.textSize);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={["top","left","right"]}>
@@ -30,33 +41,40 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
           <Icon name="arrow-left" size={32} color="#6366F1" />
         </TouchableOpacity>
       </View>
+      
       <View style={styles.header}>
-        <Text style={styles.title}>Settings</Text>
+        <Text style={[styles.title, { fontSize: textSize === 'extra-large' ? 32 : 28 }]}>
+          Settings & Preferences
+        </Text>
       </View>
-      <AccessibilitySettings
-        highContrast={highContrast}
-        largeText={largeText}
-        onToggleHighContrast={() => setHighContrast(h => !h)}
-        onToggleLargeText={() => setLargeText(l => !l)}
+
+      <SettingsPreferences
+        isHighContrast={isHighContrast}
+        textSize={textSize}
+        onSettingsChange={handleSettingsChange}
       />
       
       {config.app.isDevelopment && (
-        <Card style={styles.debugCard}>
-          <Card.Title
-            title="Developer Tools"
-            left={(props) => <Icon {...props} name="code-braces" />}
-          />
-          <Card.Content>
-            <Button
-              mode="outlined"
-              onPress={() => navigation.navigate('VoiceDebug')}
-              icon="microphone-variant"
-              style={styles.debugButton}
-            >
-              Voice Recording Debug
-            </Button>
-          </Card.Content>
-        </Card>
+        <View style={styles.debugSection}>
+          <Card style={styles.debugCard}>
+            <Card.Title
+              title="Developer Tools"
+              left={(props) => <Icon {...props} name="code-braces" />}
+              titleStyle={{ fontSize: textSize === 'extra-large' ? 20 : 16 }}
+            />
+            <Card.Content>
+              <Button
+                mode="outlined"
+                onPress={() => navigation.navigate('VoiceDebug')}
+                icon="microphone-variant"
+                style={styles.debugButton}
+                labelStyle={{ fontSize: textSize === 'extra-large' ? 18 : 14 }}
+              >
+                Voice Recording Debug
+              </Button>
+            </Card.Content>
+          </Card>
+        </View>
       )}
     </SafeAreaView>
   );
@@ -66,17 +84,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
-    padding: 16,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 8,
+    paddingHorizontal: 16,
   },
   title: {
-    fontSize: 28,
     fontWeight: 'bold',
     color: '#6366F1',
-    marginTop: 16,
+    marginTop: 8,
+    textAlign: 'center',
   },
   backArrowContainer: {
     width: '100%',
@@ -90,8 +108,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     padding: 4,
   },
+  debugSection: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
   debugCard: {
-    marginTop: 24,
     elevation: 2,
   },
   debugButton: {
@@ -99,4 +120,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SettingsScreen; 
+export default SettingsScreen;
