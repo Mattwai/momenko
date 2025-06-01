@@ -8,25 +8,25 @@
 
 /* Begin PBXBuildFile section */
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
-		3AF31BF58AD44D26F78C9C16 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FB723FD90DC8E4D9EEC719B /* ExpoModulesProvider.swift */; };
+		2DB79A4587A9B38C9475AE8F /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21FA5E750D56A470E02D88A7 /* ExpoModulesProvider.swift */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		B4435B999AFA03A68CC19A84 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 5F59DBD69A24767933513390 /* PrivacyInfo.xcprivacy */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
+		C190EF9DF0071C79A9AD332A /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 16389A0468DCE1EDEA8E2B80 /* PrivacyInfo.xcprivacy */; };
+		CBFD13178EF34F629639EEF9 /* Pods_Momenko.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8A47004624A43C3AC64FD85D /* Pods_Momenko.framework */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
-		F3A42834463F9E27A0929BED /* Pods_Momenko.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2FAF7EEDEEA1B30FD3E1759C /* Pods_Momenko.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		13B07F961A680F5B00A75B9A /* Momenko.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Momenko.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Momenko/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = Momenko/Info.plist; sourceTree = "<group>"; };
-		2FAF7EEDEEA1B30FD3E1759C /* Pods_Momenko.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Momenko.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		5F59DBD69A24767933513390 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = Momenko/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		6FB723FD90DC8E4D9EEC719B /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Momenko/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
-		75B6994649C13528172DFC94 /* Pods-Momenko.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Momenko.release.xcconfig"; path = "Target Support Files/Pods-Momenko/Pods-Momenko.release.xcconfig"; sourceTree = "<group>"; };
+		16389A0468DCE1EDEA8E2B80 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = Momenko/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		21FA5E750D56A470E02D88A7 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Momenko/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		5BA117AF990844E3B67A5870 /* Pods-Momenko.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Momenko.debug.xcconfig"; path = "Target Support Files/Pods-Momenko/Pods-Momenko.debug.xcconfig"; sourceTree = "<group>"; };
+		8A47004624A43C3AC64FD85D /* Pods_Momenko.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Momenko.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = Momenko/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
-		E468A203BD271961AEDD8040 /* Pods-Momenko.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Momenko.debug.xcconfig"; path = "Target Support Files/Pods-Momenko/Pods-Momenko.debug.xcconfig"; sourceTree = "<group>"; };
+		D8D4CB71C9478A909A7631B2 /* Pods-Momenko.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Momenko.release.xcconfig"; path = "Target Support Files/Pods-Momenko/Pods-Momenko.release.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = Momenko/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* Momenko-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "Momenko-Bridging-Header.h"; path = "Momenko/Momenko-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -37,7 +37,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F3A42834463F9E27A0929BED /* Pods_Momenko.framework in Frameworks */,
+				CBFD13178EF34F629639EEF9 /* Pods_Momenko.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -53,7 +53,7 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				5F59DBD69A24767933513390 /* PrivacyInfo.xcprivacy */,
+				16389A0468DCE1EDEA8E2B80 /* PrivacyInfo.xcprivacy */,
 			);
 			name = Momenko;
 			sourceTree = "<group>";
@@ -62,27 +62,17 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				2FAF7EEDEEA1B30FD3E1759C /* Pods_Momenko.framework */,
+				8A47004624A43C3AC64FD85D /* Pods_Momenko.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		3B1A38EB83CBF8F283598AFE /* ExpoModulesProviders */ = {
+		71F9E9D4FDE7585B78ACE3D2 /* ExpoModulesProviders */ = {
 			isa = PBXGroup;
 			children = (
-				C9F8DDCB7E0262025C74033E /* Momenko */,
+				9277202C9221590DBEA82574 /* Momenko */,
 			);
 			name = ExpoModulesProviders;
-			sourceTree = "<group>";
-		};
-		5E904062928556EC80BA6308 /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				E468A203BD271961AEDD8040 /* Pods-Momenko.debug.xcconfig */,
-				75B6994649C13528172DFC94 /* Pods-Momenko.release.xcconfig */,
-			);
-			name = Pods;
-			path = Pods;
 			sourceTree = "<group>";
 		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
@@ -99,8 +89,8 @@
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				5E904062928556EC80BA6308 /* Pods */,
-				3B1A38EB83CBF8F283598AFE /* ExpoModulesProviders */,
+				A21DDF0873959C01B6378B62 /* Pods */,
+				71F9E9D4FDE7585B78ACE3D2 /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -115,6 +105,24 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		9277202C9221590DBEA82574 /* Momenko */ = {
+			isa = PBXGroup;
+			children = (
+				21FA5E750D56A470E02D88A7 /* ExpoModulesProvider.swift */,
+			);
+			name = Momenko;
+			sourceTree = "<group>";
+		};
+		A21DDF0873959C01B6378B62 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				5BA117AF990844E3B67A5870 /* Pods-Momenko.debug.xcconfig */,
+				D8D4CB71C9478A909A7631B2 /* Pods-Momenko.release.xcconfig */,
+			);
+			name = Pods;
+			path = Pods;
+			sourceTree = "<group>";
+		};
 		BB2F792B24A3F905000567C9 /* Supporting */ = {
 			isa = PBXGroup;
 			children = (
@@ -122,14 +130,6 @@
 			);
 			name = Supporting;
 			path = Momenko/Supporting;
-			sourceTree = "<group>";
-		};
-		C9F8DDCB7E0262025C74033E /* Momenko */ = {
-			isa = PBXGroup;
-			children = (
-				6FB723FD90DC8E4D9EEC719B /* ExpoModulesProvider.swift */,
-			);
-			name = Momenko;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -140,13 +140,13 @@
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "Momenko" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
-				EF55727DA8E2D225D5105B4A /* [Expo] Configure project */,
+				B9EF39D9305C70B6AD1A1666 /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
-				3029E6B6702F71A2B784E831 /* [CP] Embed Pods Frameworks */,
+				20DBB7F944EF6AB55A6C1D3C /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -196,7 +196,7 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				B4435B999AFA03A68CC19A84 /* PrivacyInfo.xcprivacy in Resources */,
+				C190EF9DF0071C79A9AD332A /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -240,7 +240,7 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		3029E6B6702F71A2B784E831 /* [CP] Embed Pods Frameworks */ = {
+		20DBB7F944EF6AB55A6C1D3C /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -269,6 +269,7 @@
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/EXConstants.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/ExpoConstants_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXNotifications/ExpoNotifications_privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoFileSystem/ExpoFileSystem_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/RCT-Folly/RCT-Folly_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/RNCAsyncStorage/RNCAsyncStorage_resources.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/RNSVG/RNSVGFilters.bundle",
@@ -304,6 +305,7 @@
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/EXConstants.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoConstants_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoNotifications_privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoFileSystem_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/RCT-Folly_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/RNCAsyncStorage_resources.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/RNSVGFilters.bundle",
@@ -338,7 +340,7 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Momenko/Pods-Momenko-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		EF55727DA8E2D225D5105B4A /* [Expo] Configure project */ = {
+		B9EF39D9305C70B6AD1A1666 /* [Expo] Configure project */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -365,7 +367,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
-				3AF31BF58AD44D26F78C9C16 /* ExpoModulesProvider.swift in Sources */,
+				2DB79A4587A9B38C9475AE8F /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -374,7 +376,7 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = E468A203BD271961AEDD8040 /* Pods-Momenko.debug.xcconfig */;
+			baseConfigurationReference = 5BA117AF990844E3B67A5870 /* Pods-Momenko.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -410,7 +412,7 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 75B6994649C13528172DFC94 /* Pods-Momenko.release.xcconfig */;
+			baseConfigurationReference = D8D4CB71C9478A909A7631B2 /* Pods-Momenko.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
