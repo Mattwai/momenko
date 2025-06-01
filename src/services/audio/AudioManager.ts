@@ -60,8 +60,9 @@ export class AudioManager {
 
   async startRecording(onSilenceDetected?: () => void): Promise<void> {
     try {
-      // Make absolutely sure we clean up any existing recording first
+      // Prevent multiple recordings from starting simultaneously
       if (this.recording) {
+        console.warn('Recording already in progress, stopping previous recording first');
         try {
           await this.stopRecording();
         } catch (err) {
@@ -71,9 +72,13 @@ export class AudioManager {
           this.recording = null;
         }
         
-        // Always add a delay to ensure resources are released
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Longer delay to ensure complete cleanup
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
+
+      // Reset speech detection state
+      this.volumeHistory = [];
+      this.speechDetected = false;
 
       // Force audio session reconfiguration
       await this.configureAudioSession();
@@ -120,9 +125,10 @@ export class AudioManager {
         },
       };
 
-      // Only create a new recording if we don't have one
-      if (!this.recording) {
-        const recording = new Audio.Recording();
+      // Create new recording with better error handling
+      const recording = new Audio.Recording();
+      
+      try {
         await recording.prepareToRecordAsync(recordingOptions);
         
         // Set up recording status updates for silence detection
@@ -130,6 +136,15 @@ export class AudioManager {
         
         await recording.startAsync();
         this.recording = recording;
+        console.log('🎤 Recording started successfully');
+      } catch (recordingError) {
+        // Clean up failed recording attempt
+        try {
+          await recording.stopAndUnloadAsync();
+        } catch (cleanupError) {
+          console.warn('Error cleaning up failed recording:', cleanupError);
+        }
+        throw recordingError;
       }
     } catch (error) {
       console.error('Error starting recording:', error);
@@ -138,25 +153,50 @@ export class AudioManager {
     }
   }
 
+  private volumeHistory: number[] = [];
+  private speechDetected = false;
+  
   private handleRecordingStatusUpdate = (status: Audio.RecordingStatus) => {
     if (!status.isRecording) return;
 
     // Safely get metering value, fallback to -160 if not available
     const currentVolume = typeof status.metering === 'number' ? status.metering : -160;
     
-    // Detect silence - only start timer if we don't already have one
-    if (currentVolume <= config.audio.silenceThreshold) {
+    // Add to volume history for better analysis
+    this.volumeHistory.push(currentVolume);
+    if (this.volumeHistory.length > 10) {
+      this.volumeHistory.shift(); // Keep only last 10 readings
+    }
+    
+    // Calculate average volume over recent samples
+    const avgVolume = this.volumeHistory.reduce((sum, vol) => sum + vol, 0) / this.volumeHistory.length;
+    
+    // More sensitive speech detection
+    const speechThreshold = config.audio.silenceThreshold + 10; // 10dB above silence threshold
+    const isSpeaking = avgVolume > speechThreshold;
+    
+    // Track if we've detected speech at all during this recording
+    if (isSpeaking && !this.speechDetected) {
+      this.speechDetected = true;
+      console.log('🗣️ Speech detected, volume:', Math.round(avgVolume), 'dB');
+    }
+    
+    // Only start silence timer if we've detected speech before
+    if (!isSpeaking && this.speechDetected) {
       if (!this.silenceTimer && this.onSilenceDetected) {
+        console.log('🔇 Silence detected after speech, starting timer...');
         this.silenceTimer = setTimeout(() => {
+          console.log('⏰ Silence timeout reached, stopping recording');
           if (this.onSilenceDetected) {
             this.onSilenceDetected();
           }
           this.silenceTimer = null;
         }, config.audio.silenceDuration);
       }
-    } else {
-      // Clear silence timer if we detect sound
+    } else if (isSpeaking) {
+      // Clear silence timer if we detect sound again
       if (this.silenceTimer) {
+        console.log('🎤 Speech resumed, clearing silence timer');
         clearTimeout(this.silenceTimer);
         this.silenceTimer = null;
       }
@@ -167,10 +207,12 @@ export class AudioManager {
 
   async stopRecording(): Promise<string> {
     if (!this.recording) {
+      console.log('No recording to stop');
       return '';
     }
 
     let uri = '';
+    const recordingRef = this.recording;
     
     try {
       // Clear silence timer first
@@ -178,35 +220,43 @@ export class AudioManager {
         clearTimeout(this.silenceTimer);
         this.silenceTimer = null;
       }
+      
+      // Reset speech detection state
+      this.volumeHistory = [];
+      this.speechDetected = false;
 
       // Get the URI before stopping (in case stopping fails)
-      uri = this.recording.getURI() || '';
+      uri = recordingRef.getURI() || '';
 
       try {
         // Check if recording is actually recording before trying to stop
-        const status = await this.recording.getStatusAsync();
-        if (status.isRecording) {
-          await this.recording.stopAndUnloadAsync();
-        } else if (status.isDoneRecording) {
-          await this.recording.stopAndUnloadAsync();
+        const status = await recordingRef.getStatusAsync();
+        if (status.isRecording || status.isDoneRecording) {
+          await recordingRef.stopAndUnloadAsync();
+          console.log('🛑 Recording stopped and unloaded');
         }
       } catch (stopError) {
         console.warn('Error during recording stop:', stopError);
-        // Continue with cleanup despite errors
+        // Try force unload
+        try {
+          await recordingRef.stopAndUnloadAsync();
+        } catch (forceError) {
+          console.warn('Force unload also failed:', forceError);
+        }
       }
       
-      // Make sure to clear the reference
+      // Clear the reference immediately
       this.recording = null;
 
-      // Add a small delay after stopping
-      await new Promise(resolve => setTimeout(resolve, 200));
+      // Longer delay to ensure complete cleanup
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       return uri;
     } catch (error) {
       console.error('Error stopping recording:', error);
       // Force cleanup in case of error
       this.recording = null;
-      return uri; // Return URI if we got it, even if there was an error
+      return uri;
     }
   }
 

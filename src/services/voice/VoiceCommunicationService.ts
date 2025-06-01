@@ -5,6 +5,7 @@ import config from '../../config';
 import { PreferredLanguage } from '../../types';
 import { Buffer } from 'buffer';
 import axios from 'axios';
+import { speechRecognition } from '../../utils/speech-recognition';
 
 // Define interfaces
 export interface VoiceCommunicationOptions {
@@ -335,13 +336,11 @@ export class VoiceCommunicationService {
   }
 
   private handleSilenceDetected(): void {
-    console.log('Silence detected, stopping listening');
-    
     if (config.voice.autoStopOnSilence && this.isListening) {
       // Set a timeout to stop listening if silence continues
       this.silenceTimeout = setTimeout(() => {
         // If we have interim transcript, convert it to final before stopping
-        if (this.interimTranscript) {
+        if (this.interimTranscript && this.interimTranscript.trim()) {
           this.finalTranscript = this.interimTranscript;
           if (this.onTranscriptUpdate) {
             this.onTranscriptUpdate(this.interimTranscript, true);
@@ -349,7 +348,7 @@ export class VoiceCommunicationService {
           this.interimTranscript = '';
         }
         this.stopListening();
-      }, 1500); // 1.5 second delay before stopping
+      }, 4000); // 4 second delay before stopping (increased sensitivity)
     }
   }
 
@@ -390,37 +389,44 @@ export class VoiceCommunicationService {
     try {
       // Check if file exists
       const fileInfo = await FileSystem.getInfoAsync(fileUri);
-      
       if (!fileInfo.exists) {
-        throw new Error('Audio file does not exist');
+        console.error('Audio file does not exist:', fileUri);
+        return;
       }
-      
-      // Since DeepSeek audio transcription endpoints are unavailable, 
-      // we'll use device transcription and connect to DeepSeek chat API later
       
       console.log(`Processing audio file: ${fileUri}`);
       
-      // Instead of random phrases, use a more context-aware approach
-      // For now, use a simple placeholder until real speech recognition is implemented
-      // In a real implementation, this would use iOS Speech Framework to transcribe the audio
-      const simulatedTranscript = "Hello";
+      // Use iOS Speech Framework for real speech recognition
+      const transcript = await this.processWithNativeSpeechRecognition(fileUri);
       
       // Store duration for better voice analysis
       this.lastRecordingDuration = 0;
       
-      // Update the transcript state
-      this.finalTranscript = simulatedTranscript;
+      // Update the final transcript
+      this.finalTranscript = transcript;
       
+      // Notify about the final transcript
       if (this.onTranscriptUpdate) {
-        this.onTranscriptUpdate(simulatedTranscript, true);
+        this.onTranscriptUpdate(transcript, true);
       }
       
       // Log the generated transcript
-      console.log(`Generated transcript: "${simulatedTranscript}"`);
+      console.log(`Generated transcript: "${transcript}"`);
       
-      // Send the transcript to DeepSeek Chat API and get a response
-      if (config.deepseek.isConfigured) {
-        await this.sendToDeepSeekChat(simulatedTranscript);
+      // Only send to DeepSeek if we have actual speech content (not fallback)
+      if (config.deepseek.isConfigured && transcript.trim() && !this.isFallbackTranscript(transcript)) {
+        await this.sendToDeepSeekChat(transcript);
+      } else if (!transcript.trim() || this.isFallbackTranscript(transcript)) {
+        console.log('🤫 No real speech detected, continuing to listen...');
+        // Auto-restart listening since no real speech was detected
+        setTimeout(() => {
+          if (!this.isListening && this.isInitialized) {
+            console.log("🎤 Auto-restarting listening (no speech detected)");
+            this.startListening().catch(error => {
+              console.error("Failed to auto-restart listening:", error);
+            });
+          }
+        }, 1000);
       }
     } catch (error) {
       console.error('Error processing audio file:', error);
@@ -430,24 +436,61 @@ export class VoiceCommunicationService {
   
   private async processWithNativeSpeechRecognition(fileUri: string): Promise<string> {
     try {
-      // Read audio file as base64
-      const audioBase64 = await FileSystem.readAsStringAsync(fileUri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
+      console.log('🎤 Processing audio with native iOS Speech Framework');
       
-      // TODO: Implement actual iOS Speech Framework integration
-      // For now, we'll use a simple approach that indicates we received audio
-      // but can't transcribe it without native speech recognition
+      // Check if native speech recognition is available
+      const isAvailable = await speechRecognition.isAvailable();
+      if (!isAvailable) {
+        console.warn('Speech recognition not available on this device');
+        return this.getFallbackTranscript(fileUri);
+      }
       
-      console.log('🎤 Audio file processed, length:', audioBase64.length);
+      // Request permissions if needed
+      const hasPermission = await speechRecognition.requestPermissions();
+      if (!hasPermission) {
+        console.warn('Speech recognition permission denied');
+        return this.getFallbackTranscript(fileUri);
+      }
       
-      // Return a placeholder that indicates the system is working
-      // but needs proper speech recognition implementation
-      return "Audio received but speech recognition needs native implementation";
+      // Get language code for iOS Speech Framework
+      const languageCode = this.getLanguageCode();
+      console.log(`🎤 Using language: ${languageCode}`);
+      
+      // Perform speech recognition
+      const result = await speechRecognition.recognizeAudio(fileUri, languageCode);
+      console.log('✅ Native speech recognition result:', result);
+      
+      return result && result.trim() ? result.trim() : "No speech detected";
     } catch (error) {
       console.error('Error processing audio with speech recognition:', error);
-      return "Error processing speech";
+      return this.getFallbackTranscript(fileUri);
     }
+  }
+  
+  private async getFallbackTranscript(fileUri: string): Promise<string> {
+    try {
+      // Fallback: Use file size heuristics to detect if actual speech occurred
+      const fileInfo = await FileSystem.getInfoAsync(fileUri);
+      const fileSizeKB = fileInfo.exists && 'size' in fileInfo ? Math.round((fileInfo.size || 0) / 1024) : 0;
+      
+      console.log(`🎤 Using fallback transcription, audio file size: ${fileSizeKB}KB`);
+      
+      // If file is too small, likely no speech was detected
+      if (fileSizeKB < 5) {
+        return ""; // Empty - no speech detected
+      } else if (fileSizeKB < 20) {
+        return "FALLBACK_MINIMAL"; // Marker for minimal audio
+      } else {
+        return "FALLBACK_SPEECH"; // Marker for potential speech
+      }
+    } catch (error) {
+      console.error('Error in fallback transcript:', error);
+      return ""; // Return empty on error
+    }
+  }
+  
+  private isFallbackTranscript(transcript: string): boolean {
+    return transcript.startsWith("FALLBACK_") || transcript === "";
   }
   
   /**
@@ -764,6 +807,16 @@ export class VoiceCommunicationService {
         }
         this.currentSound = null;
       }
+      
+      // Auto-restart listening after AI finishes speaking
+      setTimeout(() => {
+        if (!this.isListening && this.isInitialized) {
+          console.log("🎤 Auto-restarting listening after AI response");
+          this.startListening().catch(error => {
+            console.error("Failed to auto-restart listening:", error);
+          });
+        }
+      }, 1500); // Longer delay to ensure audio cleanup is complete and avoid conflicts
     }
     
     // Log playback position for debugging (optional)

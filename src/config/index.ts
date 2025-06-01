@@ -76,15 +76,15 @@ const config: AppConfig = {
     }
   },
   audio: {
-    silenceThreshold: -50, // dB
-    silenceDuration: 3000, // 3 seconds
+    silenceThreshold: -65, // dB (more sensitive)
+    silenceDuration: 6000, // 6 seconds (longer before stopping)
     sampleRate: 44100,
     bitRate: 128000,
     maxRecordingDuration: 300000, // 5 minutes
   },
   voice: {
     autoStopOnSilence: true,
-    defaultSilenceTimeout: 3, // seconds
+    defaultSilenceTimeout: 6, // seconds (longer timeout)
     maxTranscriptLength: 5000,
     recognitionTimeoutMs: 300000, // 5 minutes
   }
