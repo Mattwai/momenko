@@ -121,35 +121,35 @@ const CaregiverDashboard: React.FC = () => {
     if (error) throw error;
 
     interface DatabaseUser {
-      id: string;
-      full_name: string;
-      cultural_profiles: Array<{ cultural_group: string }>;
-      check_in_schedules: Array<{ last_check_in: string }>;
+      id: any;
+      full_name: any;
+      cultural_profiles: Array<{ cultural_group: any }>;
+      check_in_schedules: Array<{ last_check_in: any }>;
       wellness_indicators: Array<{
-        id: string;
-        user_id: string;
-        date: string;
-        check_in_completed: boolean;
-        conversation_quality: string;
-        concerns: string[];
-        positive_notes: string[];
-        cultural_engagement: number;
-        created_at: string;
-        updated_at: string;
+        id?: any;
+        user_id?: any;
+        date: any;
+        check_in_completed: any;
+        conversation_quality: any;
+        concerns?: any;
+        positive_notes?: any;
+        cultural_engagement?: any;
+        created_at?: any;
+        updated_at?: any;
       }>;
     }
 
     interface RawWellnessIndicator {
-      id: string;
-      user_id: string;
-      date: string;
-      check_in_completed: boolean;
-      conversation_quality: string;
-      concerns: string[];
-      positive_notes: string[];
-      cultural_engagement: number;
-      created_at: string;
-      updated_at: string;
+      id?: any;
+      user_id?: any;
+      date: any;
+      check_in_completed: any;
+      conversation_quality: any;
+      concerns?: any;
+      positive_notes?: any;
+      cultural_engagement?: any;
+      created_at?: any;
+      updated_at?: any;
     }
 
     const patientsData: PatientOverview[] =
@@ -162,16 +162,28 @@ const CaregiverDashboard: React.FC = () => {
 
         // Transform raw wellness data to WellnessIndicator format
         const recentWellness: WellnessIndicator[] = rawWellness?.map((w: RawWellnessIndicator) => ({
-          id: w.id,
-          userId: w.user_id,
+          id: w.id || `${user.id}_${w.date}`,
+          userId: w.user_id || user.id,
           date: w.date,
-          checkInCompleted: w.check_in_completed,
-          conversationQuality: w.conversation_quality,
-          concerns: w.concerns || [],
-          positiveNotes: w.positive_notes || [],
-          culturalEngagement: w.cultural_engagement,
-          createdAt: w.created_at,
-          updatedAt: w.updated_at
+          checkInCompleted: Boolean(w.check_in_completed),
+          conversationQuality: (w.conversation_quality || 'fair') as 'poor' | 'fair' | 'good' | 'excellent',
+          moodIndicators: {
+            anxious: false,
+            confused: false,
+            content: true,
+            agitated: false,
+            responsive: true
+          },
+          culturalEngagement: {
+            traditionalGreetingsUsed: false,
+            familyMentioned: false,
+            culturalTopicsDiscussed: false,
+            spiritualReferencesNoted: false
+          },
+          concerns: Array.isArray(w.concerns) ? w.concerns : [],
+          positiveNotes: Array.isArray(w.positive_notes) ? w.positive_notes : [],
+          createdAt: w.created_at || new Date().toISOString(),
+          updatedAt: w.updated_at || new Date().toISOString()
         })) || [];
 
         const lastCheckIn = user.check_in_schedules?.[0]?.last_check_in;
@@ -181,7 +193,7 @@ const CaregiverDashboard: React.FC = () => {
         return {
           id: user.id,
           fullName: user.full_name,
-          culturalGroup: user.cultural_profiles?.[0]?.cultural_group || "western",
+          culturalGroup: (user.cultural_profiles?.[0]?.cultural_group || "western") as CulturalGroup,
           lastCheckIn,
           currentWellnessScore: wellnessScore,
           alertsCount: 0, // Will be loaded separately

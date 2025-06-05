@@ -132,7 +132,7 @@ export const CulturalIntelligenceDemo: React.FC = () => {
     Alert.alert(
       'Cached Phrase Check',
       cached 
-        ? `Found cached phrase:\nID: ${cached.id}\nUse Count: ${cached.useCount}\nLast Used: ${cached.lastUsed}`
+        ? `Found cached phrase:\nContent: ${cached.content}\nUse Count: ${cached.useCount}\nAudio URL: ${cached.audioUrl || 'Not cached'}`
         : 'No cached phrase found for this content'
     );
   };

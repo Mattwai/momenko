@@ -547,8 +547,8 @@ class UsageAnalytics {
     // This would integrate with family notification system
     console.log('Sending family report:', {
       satisfaction: report.conversationMetrics.satisfactionScore,
-      dailyUsage: Object.values(report.usagePatterns.dailyUsage).reduce((a, b) => a + b, 0),
-      concerns: report.insights.filter(i => i.includes('below average') || i.includes('High error'))
+      dailyUsage: (Object.values(report.usagePatterns.dailyUsage) as number[]).reduce((a: number, b: number) => a + b, 0),
+      concerns: report.insights.filter((i: string) => i.includes('below average') || i.includes('High error'))
     });
   }
 

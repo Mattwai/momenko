@@ -194,7 +194,7 @@ class MemoryOptimizer {
       for (const [_key, chunk] of this.cachedChunks.entries()) {
         if (!oldestChunk || chunk.startTime < oldestChunk.startTime) {
           oldestChunk = chunk;
-          oldestKey = key;
+          oldestKey = _key;
         }
       }
 
@@ -278,7 +278,7 @@ class MemoryOptimizer {
     }, 60000); // Every minute
   }
 
-  private async performRoutineCleanup(): Promise<void> {
+  public async performRoutineCleanup(): Promise<void> {
     try {
       // Remove old inactive chunks from cache
       const now = Date.now();
@@ -298,7 +298,7 @@ class MemoryOptimizer {
     }
   }
 
-  private async performEmergencyCleanup(): Promise<void> {
+  public async performEmergencyCleanup(): Promise<void> {
     try {
       console.warn('Performing emergency memory cleanup');
 

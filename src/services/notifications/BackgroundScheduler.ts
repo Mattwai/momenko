@@ -367,6 +367,10 @@ class BackgroundScheduler {
         sound: notification.culturalConfig.specialConsiderations.indirectCommunication ? 
           undefined : 'default',
       },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: new Date(),
+      },
     };
 
     await Notifications.scheduleNotificationAsync(notificationRequest);
@@ -529,10 +533,10 @@ class BackgroundScheduler {
       const userIndicators = new Map<string, any[]>();
       
       indicators?.forEach((indicator: WellnessIndicator) => {
-        if (!userIndicators.has(indicator.user_id)) {
-          userIndicators.set(indicator.user_id, []);
+        if (!userIndicators.has(indicator.userId)) {
+          userIndicators.set(indicator.userId, []);
         }
-        userIndicators.get(indicator.user_id)?.push(indicator);
+        userIndicators.get(indicator.userId)?.push(indicator);
       });
 
       // Analyze each user's trends

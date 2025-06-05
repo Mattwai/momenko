@@ -699,6 +699,12 @@ class NetworkOptimizer {
       this.isOnline = false;
     }
   }
+
+  reportNetworkActivity(usage: number): void {
+    // Report network activity for performance tracking
+    console.log(`Network activity reported: ${usage}MB`);
+    this.updateDataUsage(usage * 1024 * 1024); // Convert MB to bytes
+  }
 }
 
 export default new NetworkOptimizer();

@@ -97,13 +97,13 @@ const FamilyDashboard: React.FC = () => {
       .single();
 
     if (contactData?.users) {
-      const user = contactData.users;
+      const user = Array.isArray(contactData.users) ? contactData.users[0] : contactData.users;
       const recentWellness = await getRecentWellnessData(user.id);
       
       setLovedOne({
         id: user.id,
         fullName: user.full_name,
-        culturalGroup: user.cultural_profiles?.cultural_group || 'western',
+        culturalGroup: (user.cultural_profiles?.[0]?.cultural_group || 'western') as CulturalGroup,
         relationship: contactData.relationship,
         lastCheckIn: user.check_in_schedules?.[0]?.last_check_in || null,
         wellnessScore: calculateWellnessScore(recentWellness),
@@ -198,10 +198,10 @@ const FamilyDashboard: React.FC = () => {
 
     const qualityMap = { poor: 1, fair: 2, good: 3, excellent: 4 };
     const avgQuality = indicators.reduce((sum, ind) => 
-      sum + (qualityMap[ind.conversation_quality as keyof typeof qualityMap] || 0), 0
+      sum + (qualityMap[ind.conversationQuality as keyof typeof qualityMap] || 0), 0
     ) / indicators.length;
 
-    const completionRate = indicators.filter(ind => ind.check_in_completed).length / indicators.length;
+    const completionRate = indicators.filter(ind => ind.checkInCompleted).length / indicators.length;
     
     return Math.round(((avgQuality / 4) * 0.6 + completionRate * 0.4) * 100);
   };
@@ -209,7 +209,7 @@ const FamilyDashboard: React.FC = () => {
   const calculateCheckInStreak = (indicators: WellnessIndicator[]): number => {
     let streak = 0;
     for (let i = 0; i < indicators.length; i++) {
-      if (indicators[i].check_in_completed) {
+      if (indicators[i].checkInCompleted) {
         streak++;
       } else {
         break;
@@ -224,7 +224,7 @@ const FamilyDashboard: React.FC = () => {
   };
 
   const extractPositives = (indicators: WellnessIndicator[]): string[] => {
-    const allPositives = indicators.flatMap(ind => ind.positive_notes || []);
+    const allPositives = indicators.flatMap(ind => ind.positiveNotes || []);
     return [...new Set(allPositives)].slice(0, 3);
   };
 
@@ -305,7 +305,7 @@ const FamilyDashboard: React.FC = () => {
     return {
       labels: last30Days.map(data => format(new Date(data.date), 'M/d')),
       datasets: [{
-        data: last30Days.map(data => data.check_in_completed ? 1 : 0),
+        data: last30Days.map(data => data.checkInCompleted ? 1 : 0),
         strokeWidth: 2,
         color: (opacity = 1) => `rgba(76, 175, 80, ${opacity})`,
       }]

@@ -83,7 +83,7 @@ class NotificationService {
       if (error) throw error;
 
       templates?.forEach((template: NotificationTemplate) => {
-        const key = `${template.type}_${template.cultural_group}_${template.language}`;
+        const key = `${template.type}_${template.culturalGroup}_${template.language}`;
         this.notificationTemplates.set(key, template);
       });
 
@@ -489,7 +489,7 @@ class NotificationService {
 
   async sendWellnessNotification(userId: string, _indicator: Partial<WellnessIndicator>): Promise<void> {
     const userProfile = await this.getUserProfile(userId);
-    const culturalConfig = DEFAULT_CULTURAL_NOTIFICATION_CONFIGS[userProfile.culturalGroup];
+    const culturalConfig = DEFAULT_CULTURAL_NOTIFICATION_CONFIGS[userProfile.culturalGroup as CulturalGroup];
     
     // Only send if current time is appropriate
     if (!this.isTimeAppropriate(new Date(), culturalConfig)) {
@@ -508,8 +508,12 @@ class NotificationService {
         data: {
           type: 'wellness_check',
           userId,
-          culturalGroup: userProfile.culturalGroup
+          culturalGroup: userProfile.culturalGroup,
         },
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: new Date(),
       },
     };
 
@@ -558,7 +562,15 @@ class NotificationService {
     }
   }
 
-  private async getUserProfile(userId: string): Promise<any> {
+  private async getUserProfile(userId: string): Promise<{
+    id: string;
+    culturalGroup: CulturalGroup;
+    preferredLanguage: PreferredLanguage;
+    cultural_profiles: Array<{
+      cultural_group: CulturalGroup;
+      preferred_language: PreferredLanguage;
+    }>;
+  }> {
     const { data, error } = await supabase
       .from('users')
       .select(`
@@ -571,8 +583,8 @@ class NotificationService {
     if (error) throw error;
     return {
       ...data,
-      culturalGroup: data.cultural_profiles.cultural_group,
-      preferredLanguage: data.cultural_profiles.preferred_language
+      culturalGroup: data.cultural_profiles[0]?.cultural_group || 'western',
+      preferredLanguage: data.cultural_profiles[0]?.preferred_language || 'en'
     };
   }
 

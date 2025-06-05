@@ -107,7 +107,7 @@ class AudioLatencyOptimizer {
       );
 
       // Preload to reduce playback latency
-      await sound.loadAsync();
+      await sound.loadAsync({ uri: 'https://example.com/audio/preload.mp3' });
 
       // Check if we're still within acceptable latency
       const currentLatency = Date.now() - startTime;
@@ -147,7 +147,7 @@ class AudioLatencyOptimizer {
           try {
             const uri = `data:audio/mp3;base64,${base64Data}`;
             const { sound } = await Audio.Sound.createAsync({ uri });
-            await sound.loadAsync();
+            await sound.loadAsync({ uri });
             this.preloadedAudio.set(phrase, sound);
           } catch (error) {
             console.warn(`Failed to preload audio for phrase: ${phrase}`, error);

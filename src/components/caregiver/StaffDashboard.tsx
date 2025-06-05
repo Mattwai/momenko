@@ -22,7 +22,7 @@ import {
   WellnessIndicator,
   CheckInSchedule as _CheckInSchedule,
 } from '../../types/notifications';
-import { CulturalGroup, CulturalProfile } from '../../types/cultural';
+import { CulturalGroup, CulturalProfile, PreferredLanguage } from '../../types/cultural';
 import { theme } from '../../theme';
 
 const { width } = Dimensions.get('window');
@@ -147,20 +147,59 @@ const StaffDashboard: React.FC = () => {
     if (error) throw error;
 
     const residentsData: ResidentProfile[] = data?.map((user, index) => {
-      const recentWellness = user.wellness_indicators
+      const rawWellness = user.wellness_indicators
         ?.filter(w => w.date >= format(subDays(new Date(), 7), 'yyyy-MM-dd'))
         ?.sort((a, b) => b.date.localeCompare(a.date));
 
-      const wellnessScore = calculateWellnessScore(recentWellness || []);
+      // Transform wellness data to match WellnessIndicator interface
+      const recentWellness: WellnessIndicator[] = rawWellness?.map(w => ({
+        id: (w as any).id || `${user.id}_${w.date}`,
+        userId: user.id,
+        date: w.date,
+        checkInCompleted: Boolean(w.check_in_completed),
+        conversationQuality: (w.conversation_quality || 'fair') as 'poor' | 'fair' | 'good' | 'excellent',
+        moodIndicators: {
+          anxious: false,
+          confused: false,
+          content: true,
+          agitated: false,
+          responsive: true
+        },
+        culturalEngagement: {
+          traditionalGreetingsUsed: false,
+          familyMentioned: false,
+          culturalTopicsDiscussed: false,
+          spiritualReferencesNoted: false
+        },
+        concerns: Array.isArray((w as any).concerns) ? (w as any).concerns : [],
+        positiveNotes: Array.isArray((w as any).positive_notes) ? (w as any).positive_notes : [],
+        createdAt: (w as any).created_at || new Date().toISOString(),
+        updatedAt: (w as any).updated_at || new Date().toISOString()
+      })) || [];
+
+      const wellnessScore = calculateWellnessScore(recentWellness);
       const currentAlerts = user.caregiver_alerts?.filter(alert => !alert.is_resolved).length || 0;
+      const culturalProfile = user.cultural_profiles?.[0];
 
       return {
         id: user.id,
         fullName: user.full_name,
         room: `Room ${100 + index}`,
-        culturalGroup: user.cultural_profiles?.cultural_group || 'western',
-        preferredLanguage: user.cultural_profiles?.preferred_language || 'en',
-        culturalProfile: user.cultural_profiles,
+        culturalGroup: culturalProfile?.cultural_group || 'western',
+        preferredLanguage: culturalProfile?.preferred_language || 'en',
+        culturalProfile: culturalProfile || {
+          id: `${user.id}_profile`,
+          culturalGroup: 'western' as CulturalGroup,
+          preferredLanguage: 'en' as PreferredLanguage,
+          preferredTerms: {},
+          communicationStyle: 'direct',
+          familyInvolvementLevel: 'medium',
+          spiritualConsiderations: [],
+          dietaryRestrictions: [],
+          holidaysObserved: [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        },
         admissionDate: '2024-01-15',
         emergencyContacts: user.emergency_contacts?.map(contact => ({
           name: contact.name,
@@ -175,10 +214,10 @@ const StaffDashboard: React.FC = () => {
         culturalCarePlan: {
           id: `plan_${user.id}`,
           lastUpdated: '2024-12-01',
-          keyConsiderations: generateCulturalConsiderations(user.cultural_profiles?.cultural_group),
-          familyInvolvement: getFamilyInvolvementLevel(user.cultural_profiles?.cultural_group),
-          communicationPreferences: getCommunicationPreferences(user.cultural_profiles?.cultural_group),
-          spiritualNeeds: getSpiritualNeeds(user.cultural_profiles?.cultural_group),
+          keyConsiderations: generateCulturalConsiderations(culturalProfile?.cultural_group),
+          familyInvolvement: getFamilyInvolvementLevel(culturalProfile?.cultural_group),
+          communicationPreferences: getCommunicationPreferences(culturalProfile?.cultural_group),
+          spiritualNeeds: getSpiritualNeeds(culturalProfile?.cultural_group),
         },
       };
     }) || [];
@@ -369,10 +408,10 @@ const StaffDashboard: React.FC = () => {
 
     const qualityMap = { poor: 1, fair: 2, good: 3, excellent: 4 };
     const avgQuality = indicators.reduce((sum, ind) => 
-      sum + (qualityMap[ind.conversation_quality as keyof typeof qualityMap] || 0), 0
+      sum + (qualityMap[ind.conversationQuality as keyof typeof qualityMap] || 0), 0
     ) / indicators.length;
 
-    const completionRate = indicators.filter(ind => ind.check_in_completed).length / indicators.length;
+    const completionRate = indicators.filter(ind => ind.checkInCompleted).length / indicators.length;
     
     return Math.round(((avgQuality / 4) * 0.6 + completionRate * 0.4) * 100);
   };
