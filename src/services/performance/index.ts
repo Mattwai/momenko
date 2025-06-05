@@ -362,12 +362,12 @@ class PerformanceManager {
   async getPerformanceReport(): Promise<{
     metrics: OverallPerformanceMetrics;
     detailedReports: {
-      audio: any;
-      memory: any;
-      network: any;
-      battery: any;
-      cost: any;
-      usage: any;
+      audio: Record<string, unknown>;
+      memory: Record<string, unknown>;
+      network: Record<string, unknown>;
+      battery: Record<string, unknown>;
+      cost: Record<string, unknown>;
+      usage: Record<string, unknown>;
     };
     status: 'excellent' | 'good' | 'warning' | 'critical';
     emergencyMode: boolean;

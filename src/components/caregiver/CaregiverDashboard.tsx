@@ -121,35 +121,35 @@ const CaregiverDashboard: React.FC = () => {
     if (error) throw error;
 
     interface DatabaseUser {
-      id: any;
-      full_name: any;
-      cultural_profiles: Array<{ cultural_group: any }>;
-      check_in_schedules: Array<{ last_check_in: any }>;
+      id: string;
+      full_name: string;
+      cultural_profiles: Array<{ cultural_group: string }>;
+      check_in_schedules: Array<{ last_check_in: string }>;
       wellness_indicators: Array<{
-        id?: any;
-        user_id?: any;
-        date: any;
-        check_in_completed: any;
-        conversation_quality: any;
-        concerns?: any;
-        positive_notes?: any;
-        cultural_engagement?: any;
-        created_at?: any;
-        updated_at?: any;
+        id?: string;
+        user_id?: string;
+        date: string;
+        check_in_completed: boolean;
+        conversation_quality: string;
+        concerns?: string[];
+        positive_notes?: string[];
+        cultural_engagement?: number;
+        created_at?: string;
+        updated_at?: string;
       }>;
     }
 
     interface RawWellnessIndicator {
-      id?: any;
-      user_id?: any;
-      date: any;
-      check_in_completed: any;
-      conversation_quality: any;
-      concerns?: any;
-      positive_notes?: any;
-      cultural_engagement?: any;
-      created_at?: any;
-      updated_at?: any;
+      id?: string;
+      user_id?: string;
+      date: string;
+      check_in_completed: boolean;
+      conversation_quality: string;
+      concerns?: string[];
+      positive_notes?: string[];
+      cultural_engagement?: number;
+      created_at?: string;
+      updated_at?: string;
     }
 
     const patientsData: PatientOverview[] =

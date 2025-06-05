@@ -471,7 +471,7 @@ class BatteryOptimizer {
     try {
       const savedMode = await AsyncStorage.getItem('power_saving_mode');
       if (savedMode && this.powerSavingModes.has(savedMode)) {
-        this.setPowerSavingMode(savedMode as any);
+        this.setPowerSavingMode(savedMode as 'performance' | 'balanced' | 'eco' | 'ultra_eco');
       }
     } catch (error) {
       console.error('Error loading power saving preference:', error);

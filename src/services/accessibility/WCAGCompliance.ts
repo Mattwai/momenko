@@ -894,7 +894,13 @@ class WCAGComplianceService {
   }
 
   async generateAccessibilityReport(): Promise<{
-    complianceStatus: any;
+    complianceStatus: {
+      level: 'AA' | 'AAA' | 'A' | 'Failed';
+      score: number;
+      passedCriteria: number;
+      totalCriteria: number;
+      compliance: boolean;
+    };
     elderlyConsiderations: string[];
     culturalConsiderations: string[];
     recommendations: string[];

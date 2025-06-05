@@ -153,7 +153,7 @@ const StaffDashboard: React.FC = () => {
 
       // Transform wellness data to match WellnessIndicator interface
       const recentWellness: WellnessIndicator[] = rawWellness?.map(w => ({
-        id: (w as any).id || `${user.id}_${w.date}`,
+        id: (w as { id?: string }).id || `${user.id}_${w.date}`,
         userId: user.id,
         date: w.date,
         checkInCompleted: Boolean(w.check_in_completed),
@@ -171,10 +171,10 @@ const StaffDashboard: React.FC = () => {
           culturalTopicsDiscussed: false,
           spiritualReferencesNoted: false
         },
-        concerns: Array.isArray((w as any).concerns) ? (w as any).concerns : [],
-        positiveNotes: Array.isArray((w as any).positive_notes) ? (w as any).positive_notes : [],
-        createdAt: (w as any).created_at || new Date().toISOString(),
-        updatedAt: (w as any).updated_at || new Date().toISOString()
+        concerns: Array.isArray((w as { concerns?: string[] }).concerns) ? (w as { concerns?: string[] }).concerns : [],
+        positiveNotes: Array.isArray((w as { positive_notes?: string[] }).positive_notes) ? (w as { positive_notes?: string[] }).positive_notes : [],
+        createdAt: (w as { created_at?: string }).created_at || new Date().toISOString(),
+        updatedAt: (w as { updated_at?: string }).updated_at || new Date().toISOString()
       })) || [];
 
       const wellnessScore = calculateWellnessScore(recentWellness);

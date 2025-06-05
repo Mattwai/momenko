@@ -3,12 +3,11 @@ import { Alert } from 'react-native';
 
 interface ConversationChunk {
   id: string;
-  messages: any[];
+  messages: Array<{ id: string; content: string; speaker: string; timestamp: number; text?: string; sender?: string; culturalTone?: string }>;
   startTime: number;
   endTime: number;
   culturalContext: string;
   memorySize: number;
-  isActive: boolean;
 }
 
 interface MemoryMetrics {
@@ -64,7 +63,7 @@ class MemoryOptimizer {
 
   async addConversationMessage(
     conversationId: string,
-    message: any,
+    message: { id: string; content: string; speaker: string; timestamp: number; text?: string; sender?: string; culturalTone?: string },
     culturalContext: string
   ): Promise<void> {
     try {
@@ -107,9 +106,9 @@ class MemoryOptimizer {
   async getConversationHistory(
     conversationId: string,
     limit?: number
-  ): Promise<any[]> {
+  ): Promise<Array<{ id: string; content: string; speaker: string; timestamp: number; text?: string; sender?: string; culturalTone?: string }>> {
     try {
-      const messages: any[] = [];
+      const messages: Array<{ id: string; content: string; speaker: string; timestamp: number; text?: string; sender?: string; culturalTone?: string }> = [];
       
       // Get from active chunks first
       const activeChunk = this.activeChunks.get(conversationId);
@@ -218,7 +217,14 @@ class MemoryOptimizer {
     }
   }
 
-  private compressChunk(chunk: ConversationChunk): any {
+  private compressChunk(chunk: ConversationChunk): {
+    id: string;
+    messages: Array<{ id: string; text: string; sender: string; timestamp: number; culturalTone?: string }>;
+    startTime: number;
+    endTime: number;
+    culturalContext: string;
+    memorySize: number;
+  } {
     // Simple compression: remove redundant data and optimize message structure
     const compressedMessages = chunk.messages.map(msg => ({
       id: msg.id,
@@ -235,14 +241,14 @@ class MemoryOptimizer {
     };
   }
 
-  private async loadMessagesFromStorage(conversationId: string): Promise<any[]> {
+  private async loadFromStorage(conversationId: string): Promise<Array<{ id: string; content: string; speaker: string; timestamp: number; text?: string; sender?: string; culturalTone?: string }>> {
     try {
       const keys = await AsyncStorage.getAllKeys();
       const chunkKeys = keys.filter(key => 
         key.startsWith('archived_chunk_') && key.includes(conversationId)
       );
 
-      const messages: any[] = [];
+      const messages: Array<{ id: string; content: string; speaker: string; timestamp: number; text?: string; sender?: string; culturalTone?: string }> = [];
 
       for (const key of chunkKeys) {
         const chunkData = await AsyncStorage.getItem(key);
@@ -259,7 +265,7 @@ class MemoryOptimizer {
     }
   }
 
-  private estimateMessageSize(message: any): number {
+  private estimateMessageSize(message: { content?: string; text?: string; [key: string]: unknown }): number {
     // Estimate memory size in bytes
     const jsonString = JSON.stringify(message);
     return new Blob([jsonString]).size;
@@ -284,7 +290,7 @@ class MemoryOptimizer {
       const now = Date.now();
       const maxAge = this.config.autoArchiveAfterHours * 3600000;
 
-      for (const [key, chunk] of this.cachedChunks.entries()) {
+      for (const [_key, chunk] of this.cachedChunks.entries()) {
         if (now - chunk.endTime > maxAge) {
           await this.archiveOldestCachedChunk();
         }

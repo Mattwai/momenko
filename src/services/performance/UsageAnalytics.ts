@@ -9,7 +9,7 @@ interface UserInteraction {
   culturalContext?: string;
   userProfile?: string;
   metadata?: {
-    [key: string]: any;
+    [key: string]: string | number | boolean | null;
   };
 }
 
@@ -385,7 +385,7 @@ class UsageAnalytics {
     }
   }
 
-  private async reportCriticalError(errorType: string, culturalContext?: string): Promise<void> {
+  private async reportCriticalError(_errorType: string, _culturalContext?: string): Promise<void> {
     Alert.alert(
       'Technical Issue Detected',
       'A technical issue has been detected and automatically reported. The app will continue working normally.',
@@ -543,7 +543,7 @@ class UsageAnalytics {
     };
   }
 
-  private async sendFamilyReport(report: any): Promise<void> {
+  private async sendFamilyReport(report: Record<string, unknown>): Promise<void> {
     // This would integrate with family notification system
     console.log('Sending family report:', {
       satisfaction: report.conversationMetrics.satisfactionScore,
@@ -552,7 +552,7 @@ class UsageAnalytics {
     });
   }
 
-  private async sendHealthcareReport(report: any): Promise<void> {
+  private async sendHealthcareReport(report: Record<string, unknown>): Promise<void> {
     // This would integrate with healthcare systems
     console.log('Sending healthcare report:', {
       cognitiveEngagement: report.conversationMetrics.completionRate,

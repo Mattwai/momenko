@@ -557,7 +557,7 @@ class NetworkOptimizer {
     // Estimate bandwidth based on connection type
     switch (state.type) {
       case 'wifi': return 50; // Assume 50 Mbps for WiFi
-      case 'cellular':
+      case 'cellular': {
         const details = state.details as any;
         switch (details?.cellularGeneration) {
           case '5g': return 100;
@@ -566,6 +566,7 @@ class NetworkOptimizer {
           case '2g': return 0.5;
           default: return 10;
         }
+      }
       case 'ethernet': return 100;
       default: return 1;
     }

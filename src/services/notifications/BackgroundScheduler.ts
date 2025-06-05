@@ -168,7 +168,7 @@ class BackgroundScheduler {
     }
   }
 
-  private async scheduleCheckInSeries(schedule: CheckInSchedule & { users: any }): Promise<void> {
+  private async scheduleCheckInSeries(schedule: CheckInSchedule & { users: { cultural_profiles: { cultural_group: CulturalGroup } } }): Promise<void> {
     const culturalGroup: CulturalGroup = schedule.users.cultural_profiles.cultural_group;
     const culturalConfig = DEFAULT_CULTURAL_NOTIFICATION_CONFIGS[culturalGroup];
     
@@ -217,7 +217,7 @@ class BackgroundScheduler {
     return checkInTime;
   }
 
-  private async scheduleIndividualCheckIn(schedule: CheckInSchedule & { users: any }, checkInTime: Date): Promise<void> {
+  private async scheduleIndividualCheckIn(schedule: CheckInSchedule & { users: { cultural_profiles: { cultural_group: CulturalGroup } } }, checkInTime: Date): Promise<void> {
     const _culturalGroup: CulturalGroup = schedule.users.cultural_profiles.cultural_group;
     const { users: _users, ...scheduleWithoutUsers } = schedule;
     const notificationId = await notificationService.scheduleCheckIn(scheduleWithoutUsers);
@@ -462,7 +462,7 @@ class BackgroundScheduler {
     }
   }
 
-  private async handleOverdueCheckIn(schedule: any): Promise<void> {
+  private async handleOverdueCheckIn(schedule: { users: { cultural_profiles: { cultural_group: CulturalGroup } }; last_check_in?: string }): Promise<void> {
     const culturalGroup = schedule.users.cultural_profiles.cultural_group;
     const config = DEFAULT_CULTURAL_NOTIFICATION_CONFIGS[culturalGroup as CulturalGroup];
 
@@ -503,7 +503,7 @@ class BackgroundScheduler {
     }
   }
 
-  private async processAlertEscalation(alert: any): Promise<void> {
+  private async processAlertEscalation(alert: { id: string; severity: string }): Promise<void> {
     // Escalate unresolved alerts to emergency contacts or higher-level care
     console.log('Escalating alert:', alert.id);
     
@@ -530,7 +530,7 @@ class BackgroundScheduler {
       if (error) throw error;
 
       // Group by user and analyze trends
-      const userIndicators = new Map<string, any[]>();
+      const userIndicators = new Map<string, WellnessIndicator[]>();
       
       indicators?.forEach((indicator: WellnessIndicator) => {
         if (!userIndicators.has(indicator.userId)) {
@@ -548,9 +548,9 @@ class BackgroundScheduler {
     }
   }
 
-  private async analyzeUserWellnessTrend(userId: string, indicators: any[]): Promise<void> {
+  private async analyzeUserWellnessTrend(userId: string, indicators: WellnessIndicator[]): Promise<void> {
     // Calculate trend metrics
-    const missedCheckIns = indicators.filter(i => !i.check_in_completed).length;
+    const missedCheckIns = indicators.filter(i => !i.checkInCompleted).length;
     const totalDays = indicators.length;
     const missedPercentage = totalDays > 0 ? (missedCheckIns / totalDays) * 100 : 0;
 
@@ -584,7 +584,7 @@ class BackgroundScheduler {
     }
   }
 
-  private async createWellnessConcern(userId: string, type: string, details: any): Promise<void> {
+  private async createWellnessConcern(userId: string, type: string, details: Record<string, unknown>): Promise<void> {
     const concern = {
       user_id: userId,
       concern_type: type,
@@ -602,7 +602,7 @@ class BackgroundScheduler {
     await this.notifyCaregivers(userId, type, details);
   }
 
-  private async notifyCaregivers(userId: string, concernType: string, details: any): Promise<void> {
+  private async notifyCaregivers(userId: string, concernType: string, details: Record<string, unknown>): Promise<void> {
     // Create caregiver alert for wellness concern
     const alert = {
       user_id: userId,
@@ -651,7 +651,7 @@ class BackgroundScheduler {
     }
   }
 
-  private async generateUserWellnessReport(user: any, weekStart: Date): Promise<void> {
+  private async generateUserWellnessReport(user: { id: string; full_name: string }, weekStart: Date): Promise<void> {
     // Get week's wellness data
     const { data: indicators } = await supabase
       .from('wellness_indicators')
@@ -687,28 +687,38 @@ class BackgroundScheduler {
     await this.sendWeeklyReportToFamily(user, report);
   }
 
-  private calculateAverageQuality(indicators: any[]): number {
+  private calculateAverageQuality(indicators: WellnessIndicator[]): number {
     const qualityMap = { poor: 1, fair: 2, good: 3, excellent: 4 };
     const sum = indicators.reduce((acc: number, i: WellnessIndicator) => acc + (qualityMap[i.conversationQuality as keyof typeof qualityMap] || 0), 0);
     return indicators.length > 0 ? sum / indicators.length : 0;
   }
 
-  private calculateCulturalEngagement(indicators: any[]): number {
+  private calculateCulturalEngagement(indicators: WellnessIndicator[]): number {
     const totalPossiblePoints = indicators.length * 4; // 4 engagement metrics
     const actualPoints = indicators.reduce((acc, i) => {
-      const engagement = i.cultural_engagement || {};
+      const engagement = i.culturalEngagement || {};
       return acc + 
-        (engagement.traditional_greetings_used ? 1 : 0) +
-        (engagement.family_mentioned ? 1 : 0) +
-        (engagement.cultural_topics_discussed ? 1 : 0) +
-        (engagement.spiritual_references_noted ? 1 : 0);
+        (engagement.traditionalGreetingsUsed ? 1 : 0) +
+        (engagement.familyMentioned ? 1 : 0) +
+        (engagement.culturalTopicsDiscussed ? 1 : 0) +
+        (engagement.spiritualReferencesNoted ? 1 : 0);
     }, 0);
 
     return totalPossiblePoints > 0 ? (actualPoints / totalPossiblePoints) * 100 : 0;
   }
 
-  private async sendWeeklyReportToFamily(user: any, report: any): Promise<void> {
-    const familyContacts = user.emergency_contacts?.filter((c: any) => 
+  private async sendWeeklyReportToFamily(user: { 
+    id: string; 
+    full_name: string; 
+    emergency_contacts?: Array<{ 
+      id: string; 
+      notification_preferences?: { weekly_reports?: boolean } 
+    }> 
+  }, report: Record<string, unknown>): Promise<void> {
+    const familyContacts = user.emergency_contacts?.filter((c: { 
+      id: string; 
+      notification_preferences?: { weekly_reports?: boolean } 
+    }) => 
       c.notification_preferences?.weekly_reports
     );
 
@@ -730,7 +740,15 @@ class BackgroundScheduler {
     }
   }
 
-  private formatWeeklyReportForFamily(report: any, culturalGroup: string): string {
+  private formatWeeklyReportForFamily(report: {
+    check_ins_completed: number;
+    total_days: number;
+    completion_rate: number;
+    average_conversation_quality: number;
+    cultural_engagement_score: number;
+    concerns: string[];
+    positive_notes: string[];
+  }, culturalGroup: string): string {
     const culturalContext = culturalGroup === 'maori' ? 'whānau' : 
                            culturalGroup === 'chinese' ? 'family' : 'family';
     
@@ -776,7 +794,7 @@ class BackgroundScheduler {
     }
   }
 
-  private async handleCheckInResponse(data: any): Promise<void> {
+  private async handleCheckInResponse(data: { scheduleId: string }): Promise<void> {
     console.log('Check-in completed:', data.scheduleId);
     
     // Update schedule

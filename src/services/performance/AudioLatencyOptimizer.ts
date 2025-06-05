@@ -171,7 +171,7 @@ class AudioLatencyOptimizer {
           this.networkQuality = 'excellent';
         } else if (state.type === 'cellular') {
           // Adjust based on cellular generation
-          const details = state.details as any;
+          const details = state.details as { cellularGeneration?: string };
           if (details?.cellularGeneration === '4g' || details?.cellularGeneration === '5g') {
             this.networkQuality = 'good';
           } else {

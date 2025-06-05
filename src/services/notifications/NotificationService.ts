@@ -383,7 +383,7 @@ class NotificationService {
     }
   }
 
-  private async processEscalationRule(rule: EscalationRule, schedule: any): Promise<void> {
+  private async processEscalationRule(rule: EscalationRule, schedule: { user_id: string; last_check_in?: string; users: { full_name: string } }): Promise<void> {
     const now = new Date();
     const lastCheckIn = schedule.last_check_in ? parseISO(schedule.last_check_in) : null;
     
@@ -649,27 +649,27 @@ class NotificationService {
       .upsert(fullIndicator, { onConflict: 'user_id,date' });
   }
 
-  private async sendPushNotification(deviceToken: string, notification: FamilyNotification): Promise<void> {
+  private async sendPushNotification(phone: string, notification: FamilyNotification): Promise<{ success: boolean; messageId?: string }> {
     // Implementation for push notification via FCM or APNS
     console.log('Sending push notification:', notification.title);
   }
 
-  private async sendSMSNotification(phone: string, notification: FamilyNotification): Promise<void> {
+  private async sendSMSNotification(phone: string, notification: FamilyNotification): Promise<{ success: boolean; messageId?: string }> {
     // Implementation for SMS via Twilio or similar service
     console.log('Sending SMS to:', phone, notification.title);
   }
 
-  private async sendEmailNotification(email: string, notification: FamilyNotification): Promise<void> {
+  private async sendEmailNotification(email: string, notification: FamilyNotification): Promise<{ success: boolean; messageId?: string }> {
     // Implementation for email via SendGrid or similar service
     console.log('Sending email to:', email, notification.title);
   }
 
-  private async initiateEmergencyCall(schedule: any, _rule: EscalationRule): Promise<void> {
+  private async initiateEmergencyCall(schedule: { users: { full_name: string } }, _rule: EscalationRule): Promise<void> {
     console.log('Emergency escalation triggered for:', schedule.users.full_name);
     // Implementation for emergency call system
   }
 
-  private async scheduleWelfareVisit(schedule: any, _rule: EscalationRule): Promise<void> {
+  private async scheduleWelfareVisit(schedule: { users: { full_name: string } }, _rule: EscalationRule): Promise<void> {
     console.log('Scheduling welfare visit for:', schedule.users.full_name);
     // Implementation for welfare visit scheduling
   }

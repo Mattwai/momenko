@@ -64,7 +64,7 @@ export interface ScheduledNotification {
     endDate?: string;
   };
   culturalConfig: CulturalNotificationConfig;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, string | number | boolean | null>;
   isActive: boolean;
   lastSent?: string;
   failureCount: number;
