@@ -1,12 +1,12 @@
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { format, addMinutes, isWithinInterval, parseISO, setHours, setMinutes } from 'date-fns';
+import { format, addMinutes, isWithinInterval as _isWithinInterval, parseISO, setHours, setMinutes } from 'date-fns';
 import { supabase } from '../supabase';
-import { culturalService } from '../cultural';
+import { getCulturalServices as _getCulturalServices } from '../cultural';
 import {
   NotificationType,
-  NotificationPriority,
-  NotificationChannel,
+  NotificationPriority as _NotificationPriority,
+  NotificationChannel as _NotificationChannel,
   ScheduledNotification,
   NotificationPreferences,
   CheckInSchedule,
@@ -17,7 +17,7 @@ import {
   CaregiverAlert,
   WellnessIndicator,
   NotificationDeliveryLog,
-  CulturalCelebration,
+  CulturalCelebration as _CulturalCelebration,
   DEFAULT_CULTURAL_NOTIFICATION_CONFIGS,
 } from '../../types/notifications';
 import { CulturalGroup, PreferredLanguage } from '../../types/cultural';
@@ -42,11 +42,13 @@ class NotificationService {
       // Configure notifications
       await Notifications.setNotificationHandler({
         handleNotification: async (notification) => {
-          const culturalGroup = await this.getUserCulturalGroup(notification.request.content.data?.userId);
-          const config = DEFAULT_CULTURAL_NOTIFICATION_CONFIGS[culturalGroup || 'western'];
+          const culturalGroup = await this.getUserCulturalGroup(String(notification.request.content.data?.userId || ''));
+          const config = DEFAULT_CULTURAL_NOTIFICATION_CONFIGS[culturalGroup as CulturalGroup];
           
           return {
             shouldShowAlert: true,
+            shouldShowBanner: true,
+            shouldShowList: true,
             shouldPlaySound: !config.specialConsiderations.indirectCommunication,
             shouldSetBadge: true,
           };
@@ -80,7 +82,7 @@ class NotificationService {
 
       if (error) throw error;
 
-      templates?.forEach(template => {
+      templates?.forEach((template: NotificationTemplate) => {
         const key = `${template.type}_${template.cultural_group}_${template.language}`;
         this.notificationTemplates.set(key, template);
       });
@@ -220,6 +222,7 @@ class NotificationService {
           sound: culturalConfig.specialConsiderations.indirectCommunication ? 'default' : undefined,
         },
         trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
           date: nextTime,
         },
       };
@@ -325,6 +328,7 @@ class NotificationService {
         sound: 'default',
       },
       trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
         date: reminderTime,
       },
     };
@@ -446,13 +450,13 @@ class NotificationService {
       
       // Send via preferred channels
       if (contact.notification_preferences.push) {
-        await this.sendPushNotification(contact.phone, familyNotification);
+        await this.sendPushNotification(contact.phone, { ...familyNotification, id: Date.now().toString() });
       }
       if (contact.notification_preferences.sms) {
-        await this.sendSMSNotification(contact.phone, familyNotification);
+        await this.sendSMSNotification(contact.phone, { ...familyNotification, id: Date.now().toString() });
       }
       if (contact.notification_preferences.email) {
-        await this.sendEmailNotification(contact.email, familyNotification);
+        await this.sendEmailNotification(contact.email, { ...familyNotification, id: Date.now().toString() });
       }
     }
   }
@@ -483,7 +487,7 @@ class NotificationService {
     await this.storeCaregiverAlert(caregiverAlert);
   }
 
-  async sendWellnessNotification(userId: string, indicator: Partial<WellnessIndicator>): Promise<void> {
+  async sendWellnessNotification(userId: string, _indicator: Partial<WellnessIndicator>): Promise<void> {
     const userProfile = await this.getUserProfile(userId);
     const culturalConfig = DEFAULT_CULTURAL_NOTIFICATION_CONFIGS[userProfile.culturalGroup];
     
@@ -648,12 +652,12 @@ class NotificationService {
     console.log('Sending email to:', email, notification.title);
   }
 
-  private async initiateEmergencyCall(schedule: any, rule: EscalationRule): Promise<void> {
+  private async initiateEmergencyCall(schedule: any, _rule: EscalationRule): Promise<void> {
     console.log('Emergency escalation triggered for:', schedule.users.full_name);
     // Implementation for emergency call system
   }
 
-  private async scheduleWelfareVisit(schedule: any, rule: EscalationRule): Promise<void> {
+  private async scheduleWelfareVisit(schedule: any, _rule: EscalationRule): Promise<void> {
     console.log('Scheduling welfare visit for:', schedule.users.full_name);
     // Implementation for welfare visit scheduling
   }

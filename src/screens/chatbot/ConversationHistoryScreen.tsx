@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Alert } from 'react-native';
-import { Text, Appbar } from 'react-native-paper';
+import { View as _View, StyleSheet, Alert } from 'react-native';
+import { Text as _Text, Appbar } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -32,8 +32,8 @@ const ConversationHistoryScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { culturalProfile } = useCulturalContext();
   const [sessions, setSessions] = useState<ConversationSession[]>([]);
-  const [isHighContrast, setIsHighContrast] = useState(false);
-  const [textSize, setTextSize] = useState<'small' | 'medium' | 'large' | 'extra-large'>('large');
+  const [isHighContrast, _setIsHighContrast] = useState(false);
+  const [textSize, _setTextSize] = useState<'small' | 'medium' | 'large' | 'extra-large'>('large');
 
   // Load conversation history on mount
   useEffect(() => {

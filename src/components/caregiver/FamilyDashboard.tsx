@@ -9,11 +9,11 @@ import {
   Alert,
   Dimensions,
 } from 'react-native';
-import { Card, Button, Switch, Chip, Divider } from 'react-native-paper';
+import { Card, Button, Switch, Chip, Divider as _Divider } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { format, subDays, isToday, differenceInDays } from 'date-fns';
-import { LineChart, BarChart } from 'react-native-chart-kit';
+import { format, subDays, isToday, differenceInDays as _differenceInDays } from 'date-fns';
+import { LineChart, BarChart as _BarChart } from 'react-native-chart-kit';
 import { supabase } from '../../services/supabase';
 import { notificationService } from '../../services/notifications';
 import {
@@ -59,12 +59,12 @@ const FamilyDashboard: React.FC = () => {
   const [wellnessData, setWellnessData] = useState<WellnessIndicator[]>([]);
   const [schedules, setSchedules] = useState<CheckInSchedule[]>([]);
   const [notificationPrefs, setNotificationPrefs] = useState<NotificationPreferences | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [_loading, _setLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState<'overview' | 'trends' | 'settings'>('overview');
 
   const loadDashboardData = useCallback(async () => {
     try {
-      setLoading(true);
+      _setLoading(true);
       await Promise.all([
         loadLovedOneProfile(),
         loadFamilyNotifications(),
@@ -77,7 +77,7 @@ const FamilyDashboard: React.FC = () => {
       console.error('Failed to load family dashboard data:', error);
       Alert.alert('Error', 'Failed to load dashboard data');
     } finally {
-      setLoading(false);
+      _setLoading(false);
     }
   }, []);
 
@@ -193,7 +193,7 @@ const FamilyDashboard: React.FC = () => {
     return data || [];
   };
 
-  const calculateWellnessScore = (indicators: any[]): number => {
+  const calculateWellnessScore = (indicators: WellnessIndicator[]): number => {
     if (indicators.length === 0) return 0;
 
     const qualityMap = { poor: 1, fair: 2, good: 3, excellent: 4 };
@@ -206,7 +206,7 @@ const FamilyDashboard: React.FC = () => {
     return Math.round(((avgQuality / 4) * 0.6 + completionRate * 0.4) * 100);
   };
 
-  const calculateCheckInStreak = (indicators: any[]): number => {
+  const calculateCheckInStreak = (indicators: WellnessIndicator[]): number => {
     let streak = 0;
     for (let i = 0; i < indicators.length; i++) {
       if (indicators[i].check_in_completed) {
@@ -218,12 +218,12 @@ const FamilyDashboard: React.FC = () => {
     return streak;
   };
 
-  const extractConcerns = (indicators: any[]): string[] => {
+  const extractConcerns = (indicators: WellnessIndicator[]): string[] => {
     const allConcerns = indicators.flatMap(ind => ind.concerns || []);
     return [...new Set(allConcerns)].slice(0, 3);
   };
 
-  const extractPositives = (indicators: any[]): string[] => {
+  const extractPositives = (indicators: WellnessIndicator[]): string[] => {
     const allPositives = indicators.flatMap(ind => ind.positive_notes || []);
     return [...new Set(allPositives)].slice(0, 3);
   };
@@ -488,7 +488,7 @@ const FamilyDashboard: React.FC = () => {
       <Card style={styles.card}>
         <Card.Content>
           <Text style={styles.cardTitle}>Weekly Progress</Text>
-          {weeklySummaries.map((summary, index) => (
+          {weeklySummaries.map((summary, _index) => (
             <View key={summary.weekStart} style={styles.weeklyTrendItem}>
               <Text style={styles.weekLabel}>
                 Week of {format(new Date(summary.weekStart), 'MMM d')}

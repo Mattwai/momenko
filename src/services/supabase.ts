@@ -1,6 +1,9 @@
 import 'react-native-url-polyfill/auto';
 import { supabase } from '../lib/supabase';
 
+// Export supabase client for use in other modules
+export { supabase };
+
 // Helper function to handle errors consistently
 export const handleSupabaseError = (error: Error | null) => {
   if (error) {

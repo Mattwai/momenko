@@ -41,7 +41,7 @@ export const CulturalConversationExample: React.FC<CulturalConversationExamplePr
     endConversation,
     addMessage,
     setConversationContext,
-    getCulturallyAppropriateGreeting,
+    getCulturallyAppropriateGreeting: _getCulturallyAppropriateGreeting,
     checkFamilyInvolvementRequirement,
     shouldShareInformation,
     getPrivacyGuidance,

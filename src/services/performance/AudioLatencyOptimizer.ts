@@ -1,6 +1,7 @@
 import { Audio } from 'expo-av';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
+import { encode } from 'base-64';
 
 interface AudioMetrics {
   latency: number;
@@ -124,7 +125,7 @@ class AudioLatencyOptimizer {
   async preloadCommonAudioPhrases(): Promise<void> {
     if (!this.config.preloadCommonPhrases) return;
 
-    const commonPhrases = [
+    const _commonPhrases = [
       'hello',
       'how_are_you',
       'goodbye',
@@ -307,7 +308,7 @@ class AudioLatencyOptimizer {
       binary += String.fromCharCode(bytes[i]);
     }
     
-    return btoa(binary);
+    return encode(binary);
   }
 
   async clearCache(): Promise<void> {

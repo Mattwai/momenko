@@ -129,7 +129,7 @@ class ScreenReaderService {
     }
 
     await this.announceWelcome();
-    this.startAnnouncementQueue();
+    this.sortAnnouncementQueue();
   }
 
   private announceScreenReaderActivation(): void {

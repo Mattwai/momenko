@@ -19,7 +19,7 @@ interface Message {
 
 const ChatbotScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
-  const { culturalProfile, getFamilyInvolvementGuidance } = useCulturalContext();
+  const { culturalProfile: _culturalProfile, getFamilyInvolvementGuidance } = useCulturalContext();
   const [messages] = useState<Message[]>([]);
   const [thinking] = useState(false);
   
@@ -29,8 +29,8 @@ const ChatbotScreen = () => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   
   // Accessibility preferences (could be moved to a settings context)
-  const [isHighContrast, setIsHighContrast] = useState(false);
-  const [textSize, setTextSize] = useState<'small' | 'medium' | 'large' | 'extra-large'>('large');
+  const [isHighContrast, _setIsHighContrast] = useState(false);
+  const [textSize, _setTextSize] = useState<'small' | 'medium' | 'large' | 'extra-large'>('large');
 
   const handleStartListening = () => {
     setIsListening(true);

@@ -2,14 +2,17 @@ import * as TaskManager from 'expo-task-manager';
 import * as BackgroundFetch from 'expo-background-fetch';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { format, addDays, isAfter, isBefore, parseISO } from 'date-fns';
+import { format, addHours as _addHours, addDays, isAfter, isBefore as _isBefore, parseISO } from 'date-fns';
 import { supabase } from '../supabase';
 import { notificationService } from './NotificationService';
 import {
   CheckInSchedule,
-  ScheduledNotification,
   CulturalNotificationConfig,
   DEFAULT_CULTURAL_NOTIFICATION_CONFIGS,
+  NotificationType as _NotificationType,
+  WellnessIndicator,
+  NotificationDeliveryLog,
+  ScheduledNotification,
 } from '../../types/notifications';
 import { CulturalGroup } from '../../types/cultural';
 
@@ -215,11 +218,9 @@ class BackgroundScheduler {
   }
 
   private async scheduleIndividualCheckIn(schedule: CheckInSchedule & { users: any }, checkInTime: Date): Promise<void> {
-    const culturalGroup: CulturalGroup = schedule.users.cultural_profiles.cultural_group;
-    const notificationId = await notificationService.scheduleCheckIn({
-      ...schedule,
-      users: undefined // Remove to match CheckInSchedule type
-    });
+    const _culturalGroup: CulturalGroup = schedule.users.cultural_profiles.cultural_group;
+    const { users: _users, ...scheduleWithoutUsers } = schedule;
+    const notificationId = await notificationService.scheduleCheckIn(scheduleWithoutUsers);
 
     // Store reference for background processing
     await this.storeScheduleReference(notificationId, schedule.id, checkInTime);
@@ -459,7 +460,7 @@ class BackgroundScheduler {
 
   private async handleOverdueCheckIn(schedule: any): Promise<void> {
     const culturalGroup = schedule.users.cultural_profiles.cultural_group;
-    const config = DEFAULT_CULTURAL_NOTIFICATION_CONFIGS[culturalGroup];
+    const config = DEFAULT_CULTURAL_NOTIFICATION_CONFIGS[culturalGroup as CulturalGroup];
 
     // Wait for cultural escalation delay before taking action
     const lastCheckIn = schedule.last_check_in ? parseISO(schedule.last_check_in) : null;
@@ -527,7 +528,7 @@ class BackgroundScheduler {
       // Group by user and analyze trends
       const userIndicators = new Map<string, any[]>();
       
-      indicators?.forEach(indicator => {
+      indicators?.forEach((indicator: WellnessIndicator) => {
         if (!userIndicators.has(indicator.user_id)) {
           userIndicators.set(indicator.user_id, []);
         }
@@ -657,7 +658,7 @@ class BackgroundScheduler {
     if (!indicators || indicators.length === 0) return;
 
     // Generate report summary
-    const checkInsCompleted = indicators.filter(i => i.check_in_completed).length;
+    const checkInsCompleted = indicators.filter((i: WellnessIndicator) => i.checkInCompleted).length;
     const totalDays = indicators.length;
     const averageQuality = this.calculateAverageQuality(indicators);
     
@@ -668,8 +669,8 @@ class BackgroundScheduler {
       total_days: totalDays,
       completion_rate: totalDays > 0 ? (checkInsCompleted / totalDays) * 100 : 0,
       average_conversation_quality: averageQuality,
-      concerns: indicators.flatMap(i => i.concerns || []),
-      positive_notes: indicators.flatMap(i => i.positive_notes || []),
+      concerns: indicators.flatMap((i: WellnessIndicator) => i.concerns || []),
+      positive_notes: indicators.flatMap((i: WellnessIndicator) => i.positiveNotes || []),
       cultural_engagement_score: this.calculateCulturalEngagement(indicators),
       generated_at: new Date().toISOString()
     };
@@ -684,7 +685,7 @@ class BackgroundScheduler {
 
   private calculateAverageQuality(indicators: any[]): number {
     const qualityMap = { poor: 1, fair: 2, good: 3, excellent: 4 };
-    const sum = indicators.reduce((acc, i) => acc + (qualityMap[i.conversation_quality] || 0), 0);
+    const sum = indicators.reduce((acc: number, i: WellnessIndicator) => acc + (qualityMap[i.conversationQuality as keyof typeof qualityMap] || 0), 0);
     return indicators.length > 0 ? sum / indicators.length : 0;
   }
 
@@ -879,8 +880,8 @@ class BackgroundScheduler {
     if (error) throw error;
 
     const total = logs?.length || 0;
-    const delivered = logs?.filter(log => log.status === 'delivered').length || 0;
-    const failed = logs?.filter(log => log.status === 'failed').length || 0;
+    const delivered = logs?.filter((log: NotificationDeliveryLog) => log.status === 'delivered').length || 0;
+    const failed = logs?.filter((log: NotificationDeliveryLog) => log.status === 'failed').length || 0;
 
     return {
       total,

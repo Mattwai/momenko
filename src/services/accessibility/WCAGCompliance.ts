@@ -541,7 +541,7 @@ class WCAGComplianceService {
 
     // Test all criteria
     const criteriaResults: WCAGCriteria[] = [];
-    for (const [id, criterion] of this.wcagCriteria.entries()) {
+    for (const [id, _criterion] of this.wcagCriteria.entries()) {
       const testResult = await this.testCriterion(id);
       criteriaResults.push(testResult);
     }

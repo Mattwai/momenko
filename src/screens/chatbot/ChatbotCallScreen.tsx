@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   Alert,
   BackHandler,
-  AppState,
+  AppState as _AppState,
 } from "react-native";
 import { Text } from "react-native-paper";
 import * as Animatable from "react-native-animatable";

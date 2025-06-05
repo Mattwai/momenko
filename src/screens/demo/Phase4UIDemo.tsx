@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity as _TouchableOpacity, Alert } from 'react-native';
 import { Text, Appbar, SegmentedButtons, Surface, Button } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -158,7 +158,7 @@ const Phase4UIDemo = () => {
     );
   };
 
-  const handleSettingsChange = (settings: any) => {
+  const handleSettingsChange = (settings: { isHighContrast?: boolean; textSize?: 'small' | 'medium' | 'large' | 'extra-large' }) => {
     console.log('Settings changed:', settings);
     if (settings.isHighContrast !== undefined) {
       setIsHighContrast(settings.isHighContrast);

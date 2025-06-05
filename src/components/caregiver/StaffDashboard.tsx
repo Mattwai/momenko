@@ -13,14 +13,14 @@ import {
 import { Card, Button, FAB, Portal, Dialog, TextInput, Chip, Searchbar, Menu } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { format, subDays, isToday } from 'date-fns';
-import { BarChart, PieChart } from 'react-native-chart-kit';
+import { format, subDays, addHours as _addHours, isToday as _isToday } from 'date-fns';
+import { BarChart as _BarChart, PieChart } from 'react-native-chart-kit';
 import { supabase } from '../../services/supabase';
-import { notificationService } from '../../services/notifications';
+import { notificationService as _notificationService } from '../../services/notifications';
 import {
-  CaregiverAlert,
+  CaregiverAlert as _CaregiverAlert,
   WellnessIndicator,
-  CheckInSchedule,
+  CheckInSchedule as _CheckInSchedule,
 } from '../../types/notifications';
 import { CulturalGroup, CulturalProfile } from '../../types/cultural';
 import { theme } from '../../theme';
@@ -97,7 +97,7 @@ const StaffDashboard: React.FC = () => {
   const [residents, setResidents] = useState<ResidentProfile[]>([]);
   const [culturalAlerts, setCulturalAlerts] = useState<CulturalAlert[]>([]);
   const [complianceMetrics, setComplianceMetrics] = useState<ComplianceMetric[]>([]);
-  const [educationResources, setEducationResources] = useState<EducationResource[]>([]);
+  const [_educationResources, setEducationResources] = useState<EducationResource[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterMenuVisible, setFilterMenuVisible] = useState(false);
   const [selectedCulturalGroup, setSelectedCulturalGroup] = useState<CulturalGroup | 'all'>('all');
@@ -105,7 +105,7 @@ const StaffDashboard: React.FC = () => {
   const [showResidentDialog, setShowResidentDialog] = useState(false);
   const [showAlertDialog, setShowAlertDialog] = useState(false);
   const [selectedAlert, setSelectedAlert] = useState<CulturalAlert | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
 
   const loadDashboardData = useCallback(async () => {
     try {
@@ -364,7 +364,7 @@ const StaffDashboard: React.FC = () => {
     return mapping[alertType] || 'communication';
   };
 
-  const calculateWellnessScore = (indicators: any[]): number => {
+  const calculateWellnessScore = (indicators: WellnessIndicator[]): number => {
     if (indicators.length === 0) return 0;
 
     const qualityMap = { poor: 1, fair: 2, good: 3, excellent: 4 };

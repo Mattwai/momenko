@@ -191,7 +191,7 @@ class MemoryOptimizer {
       let oldestChunk: ConversationChunk | null = null;
       let oldestKey = '';
 
-      for (const [key, chunk] of this.cachedChunks.entries()) {
+      for (const [_key, chunk] of this.cachedChunks.entries()) {
         if (!oldestChunk || chunk.startTime < oldestChunk.startTime) {
           oldestChunk = chunk;
           oldestKey = key;

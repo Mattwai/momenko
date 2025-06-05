@@ -21,7 +21,7 @@ interface CulturalContextType {
   
   // Cache management
   warmSpeechCache: () => Promise<void>;
-  getCachedPhrase: (content: string, context: ConversationContext) => Promise<any>;
+  getCachedPhrase: (content: string, context: ConversationContext) => Promise<{ content: string; audioUrl?: string; useCount: number } | null>;
   
   // Cultural sensitivity
   validateCulturalAppropriateness: (content: string) => { isAppropriate: boolean; concerns: string[] };
@@ -149,7 +149,7 @@ export const CulturalProvider: React.FC<CulturalProviderProps> = ({ children }) 
 
   const getFamilyInvolvementGuidance = (): { level: 'high' | 'medium' | 'low'; guidance: string } => {
     const level = culturalService.current.getFamilyInvolvementLevel(culturalProfile.culturalGroup, 'casual');
-    const strategy = culturalService.current.getStigmaHandlingStrategy(culturalProfile.culturalGroup);
+    const _strategy = culturalService.current.getStigmaHandlingStrategy(culturalProfile.culturalGroup);
     
     const guidance = {
       maori: 'Whānau involvement is essential for holistic care and decision-making',
@@ -179,7 +179,7 @@ export const CulturalProvider: React.FC<CulturalProviderProps> = ({ children }) 
       
       // If detected group differs significantly, suggest profile update
       if (detectedGroup !== culturalProfile.culturalGroup) {
-        const newProfile = {
+        const _newProfile = {
           ...DEFAULT_CULTURAL_PROFILES[detectedGroup],
           id: culturalProfile.id
         };
@@ -206,7 +206,7 @@ export const CulturalProvider: React.FC<CulturalProviderProps> = ({ children }) 
     }
   };
 
-  const getCachedPhrase = async (content: string, context: ConversationContext): Promise<any> => {
+  const getCachedPhrase = async (content: string, context: ConversationContext): Promise<{ content: string; audioUrl?: string; useCount: number } | null> => {
     try {
       return await cacheService.current.getCachedPhrase(content, culturalProfile.culturalGroup, context);
     } catch (err) {

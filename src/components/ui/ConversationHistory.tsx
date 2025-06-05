@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Share, Alert } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { Text, Surface, Searchbar, IconButton, Menu, Divider, Chip } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import * as Animatable from 'react-native-animatable';
 import { useCulturalContext } from '../../contexts/CulturalContext';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import { enUS, zhCN } from 'date-fns/locale';
 
 interface ConversationMessage {
@@ -39,7 +39,7 @@ interface ConversationHistoryProps {
 
 const ConversationHistory: React.FC<ConversationHistoryProps> = ({
   sessions = [],
-  onSessionSelect,
+  onSessionSelect: _onSessionSelect,
   onExportSession,
   onShareWithFamily,
   isHighContrast = false,
@@ -181,7 +181,7 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
     return indicators[session.culturalProfile as keyof typeof indicators] || indicators.western;
   };
 
-  const getLanguageLabel = (language: string) => {
+  const _getLanguageLabel = (language: string) => {
     const labels = {
       'en': 'English',
       'mi': 'Te Reo Māori',

@@ -439,7 +439,7 @@ class CulturalContextService {
     familyInvolvement: 'required' | 'recommended' | 'optional';
     terminologyPreference: 'medical' | 'euphemistic' | 'cultural';
   } {
-    const profile = this.culturalProfiles.get(culturalGroup);
+    const _profile = this.culturalProfiles.get(culturalGroup);
     
     switch (culturalGroup) {
       case 'maori':
