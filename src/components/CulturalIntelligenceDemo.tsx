@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useCulturalContext } from '../contexts/CulturalContext';
 import { useConversationState } from '../hooks/useConversationState';
-import { CulturalGroup, ConversationContext, EmotionalState } from '../types';
+import { CulturalGroup, ConversationContext } from '../types';
 import { getCulturalServices } from '../services/cultural';
 
 export const CulturalIntelligenceDemo: React.FC = () => {
@@ -23,7 +23,12 @@ export const CulturalIntelligenceDemo: React.FC = () => {
     'I would like to discuss my family',
     'Thank you for your help'
   ]);
-  const [cacheStats, setCacheStats] = useState<any>(null);
+  const [cacheStats, setCacheStats] = useState<{
+    totalPhrases: number;
+    phrasesByCulture: Record<CulturalGroup, number>;
+    averageUsage: number;
+    topContexts: { context: ConversationContext; count: number; }[];
+  } | null>(null);
   
   const detectionInputRef = useRef<TextInput>(null);
 
@@ -50,8 +55,8 @@ export const CulturalIntelligenceDemo: React.FC = () => {
     addMessage,
     setConversationContext,
     getAdaptedResponse: getConversationAdaptedResponse,
-    getCulturallyAppropriateGreeting,
-    getFamilyInvolvementGuidance: getConversationFamilyGuidance,
+    getCulturallyAppropriateGreeting: _getCulturallyAppropriateGreeting,
+    getFamilyInvolvementGuidance: _getConversationFamilyGuidance,
     checkFamilyInvolvementRequirement,
     shouldShareInformation,
     getPrivacyGuidance,
@@ -127,7 +132,7 @@ export const CulturalIntelligenceDemo: React.FC = () => {
     Alert.alert(
       'Cached Phrase Check',
       cached 
-        ? `Found cached phrase:\nID: ${cached.id}\nUse Count: ${cached.useCount}\nLast Used: ${cached.lastUsed}`
+        ? `Found cached phrase:\nContent: ${cached.content}\nUse Count: ${cached.useCount}\nAudio URL: ${cached.audioUrl || 'Not cached'}`
         : 'No cached phrase found for this content'
     );
   };
@@ -343,7 +348,7 @@ export const CulturalIntelligenceDemo: React.FC = () => {
       {conversationState && conversationState.messages.length > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Recent Messages</Text>
-          {conversationState.messages.slice(-3).map((message, index) => (
+          {conversationState.messages.slice(-3).map((message, _index) => (
             <View key={message.id} style={styles.messageContainer}>
               <Text style={styles.messageHeader}>
                 {message.speaker} ({message.context}) - {message.emotionalState}
@@ -357,8 +362,8 @@ export const CulturalIntelligenceDemo: React.FC = () => {
       {/* Detection History */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Detection History (Test Data)</Text>
-        {detectionHistory.map((msg, index) => (
-          <Text key={index} style={styles.historyItem}>• {msg}</Text>
+        {detectionHistory.map((message, _index) => (
+          <Text key={_index} style={styles.historyItem}>• {message}</Text>
         ))}
         <TextInput
           ref={detectionInputRef}

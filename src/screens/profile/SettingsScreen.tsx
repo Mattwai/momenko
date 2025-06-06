@@ -18,7 +18,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   const [isHighContrast, setIsHighContrast] = useState(false);
   const [textSize, setTextSize] = useState<'small' | 'medium' | 'large' | 'extra-large'>('large');
 
-  const handleSettingsChange = (settings: any) => {
+  const handleSettingsChange = (settings: { isHighContrast?: boolean; textSize?: 'small' | 'medium' | 'large' | 'extra-large' }) => {
     console.log('Settings changed:', settings);
     // TODO: Persist settings to storage
     if (settings.isHighContrast !== undefined) {

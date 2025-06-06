@@ -244,7 +244,7 @@ class AppInitialization {
         if (__DEV__ && version.toString().includes('simulator')) {
           console.log('📱 Running on iOS simulator with native voice enabled');
         }
-      } catch (_) {
+      } catch {
         warnings.push('Could not determine iOS version');
       }
     }
@@ -259,7 +259,7 @@ class AppInitialization {
         if (logDetails) {
           console.log(`🤖 Android API level: ${version}`);
         }
-      } catch (_) {
+      } catch {
         warnings.push('Could not determine Android version');
       }
     }
@@ -273,7 +273,7 @@ class AppInitialization {
       if (global.gc && config.app.debugMode) {
         global.gc();
       }
-    } catch (_) {
+    } catch {
       // Ignore memory check errors
     }
   }

@@ -19,7 +19,6 @@ import MemoriesScreen from './src/screens/profile/MemoriesScreen';
 import ChatbotCallScreen from './src/screens/chatbot/ChatbotCallScreen';
 import ConversationHistoryScreen from './src/screens/chatbot/ConversationHistoryScreen';
 import PersonalInformationScreen from './src/screens/profile/PersonalInformationScreen';
-import Phase4UIDemo from './src/screens/demo/Phase4UIDemo';
 import VoiceDebugScreen from './src/screens/debug/VoiceDebugScreen';
 import { SupabaseProvider } from './src/contexts/SupabaseContext';
 import { CulturalProvider } from './src/contexts/CulturalContext';
@@ -213,7 +212,6 @@ const App = () => {
                 <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
                 <Stack.Screen name="ChatbotCall" component={ChatbotCallScreen} options={{ headerShown: false }} />
                 <Stack.Screen name="ConversationHistory" component={ConversationHistoryScreen} options={{ headerShown: false }} />
-                <Stack.Screen name="Phase4UIDemo" component={Phase4UIDemo} options={{ headerShown: false }} />
                 <Stack.Screen name="VoiceDebug" component={VoiceDebugScreen} options={{ title: 'Voice Debug' }} />
               </Stack.Navigator>
             </NavigationContainer>

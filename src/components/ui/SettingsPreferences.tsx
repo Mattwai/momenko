@@ -369,7 +369,6 @@ const SettingsPreferences: React.FC<SettingsPreferencesProps> = ({
             value={voiceSpeed}
             onValueChange={setVoiceSpeed}
             step={0.1}
-            thumbStyle={{ backgroundColor: colors.accent }}
             minimumTrackTintColor={colors.accent}
             maximumTrackTintColor={colors.secondary}
           />
