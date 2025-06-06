@@ -34,7 +34,6 @@
     "date-fns": "^4.1.0",
     "events": "^3.3.0",
     "expo": "~53.0.9",
-    "expo-app-loading": "~2.1.1",
     "expo-av": "~15.1.4",
     "expo-build-properties": "1.0.0-canary-20241021-c4b5a93",
     "expo-constants": "~17.1.6",

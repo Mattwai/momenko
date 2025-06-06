@@ -116,8 +116,13 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
         case 'date':
           return b.startTime.getTime() - a.startTime.getTime();
         case 'duration': {
+<<<<<<< Updated upstream
           const aDuration = (a.endTime?.getTime() || Date.now()) - a.startTime.getTime();
           const bDuration = (b.endTime?.getTime() || Date.now()) - b.startTime.getTime();
+=======
+          const aDuration = a.endTime ? a.endTime.getTime() - a.startTime.getTime() : 0;
+          const bDuration = b.endTime ? b.endTime.getTime() - b.startTime.getTime() : 0;
+>>>>>>> Stashed changes
           return bDuration - aDuration;
         }
         case 'cultural':
