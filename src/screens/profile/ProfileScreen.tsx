@@ -57,11 +57,6 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       onPress: () => navigation.navigate('Settings'),
     },
     {
-      title: 'Phase 4 UI Demo',
-      icon: 'palette',
-      onPress: () => navigation.navigate('Phase4UIDemo'),
-    },
-    {
       title: 'Help & Support',
       icon: 'help-circle',
       onPress: () => {},

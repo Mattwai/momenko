@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, Linking } from 'react-native';
-import { Text } from 'react-native-paper';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { Text, Surface, Button } from 'react-native-paper';
 import * as Animatable from 'react-native-animatable';
 import ProgressIndicator from '../../components/ui/ProgressIndicator';
 import VoiceInterface from '../../components/ui/VoiceInterface';
@@ -15,70 +15,52 @@ interface Message {
   id: string;
   text: string;
   isUser: boolean;
+  timestamp: Date;
+  culturalContext?: string;
 }
 
 const ChatbotScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
-  const { culturalProfile: _culturalProfile, getFamilyInvolvementGuidance } = useCulturalContext();
-  const [messages] = useState<Message[]>([]);
-  const [thinking] = useState(false);
+  const { culturalProfile, getCulturalGreeting, getAdaptedResponse } = useCulturalContext();
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [thinking, setThinking] = useState(false);
   
   // Voice interface states
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   
-  // Accessibility preferences (could be moved to a settings context)
-  const [isHighContrast, _setIsHighContrast] = useState(false);
-  const [textSize, _setTextSize] = useState<'small' | 'medium' | 'large' | 'extra-large'>('large');
+  // Accessibility preferences
+  const [isHighContrast, setIsHighContrast] = useState(false);
+  const [textSize, setTextSize] = useState<'small' | 'medium' | 'large' | 'extra-large'>('large');
+  const [showCulturalIndicators, setShowCulturalIndicators] = useState(true);
+
+  // Initialize greeting message
+  useEffect(() => {
+    const timeOfDay = new Date().getHours() < 12 ? 'morning' : 
+                     new Date().getHours() < 18 ? 'afternoon' : 'evening';
+    const greeting = getCulturalGreeting(timeOfDay);
+    
+    if (messages.length === 0) {
+      const welcomeMessage: Message = {
+        id: '1',
+        text: greeting,
+        isUser: false,
+        timestamp: new Date(),
+        culturalContext: 'greeting'
+      };
+      setMessages([welcomeMessage]);
+    }
+  }, [culturalProfile, getCulturalGreeting, messages.length]);
 
   const handleStartListening = () => {
     setIsListening(true);
-    // TODO: Integrate with actual voice recognition
-    console.log('Starting voice recognition...');
-    
-    // Simulate listening for demo
-    setTimeout(() => {
-      setIsListening(false);
-      setIsProcessing(true);
-      
-      // Simulate processing
-      setTimeout(() => {
-        setIsProcessing(false);
-        setIsSpeaking(true);
-        
-        // Simulate speaking
-        setTimeout(() => {
-          setIsSpeaking(false);
-        }, 3000);
-      }, 2000);
-    }, 3000);
+    // Navigate to call screen for actual voice interaction
+    navigation.navigate('ChatbotCall');
   };
 
   const handleStopListening = () => {
     setIsListening(false);
-    console.log('Stopping voice recognition...');
-  };
-
-  const handleEmergencyContact = () => {
-    const familyGuidance = getFamilyInvolvementGuidance();
-    
-    Alert.alert(
-      'Emergency Contact',
-      `This will call your designated emergency contact. ${familyGuidance.guidance}`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Call Now', 
-          onPress: () => {
-            // TODO: Get actual emergency contact from user settings
-            const emergencyNumber = '111'; // Default emergency number
-            Linking.openURL(`tel:${emergencyNumber}`);
-          },
-          style: 'destructive'
-        }
-      ]
-    );
   };
 
   const handleTalk = () => {
@@ -89,11 +71,82 @@ const ChatbotScreen = () => {
     navigation.navigate('ConversationHistory');
   };
 
+  const addMessage = (text: string, isUser: boolean, culturalContext?: string) => {
+    const newMessage: Message = {
+      id: Date.now().toString(),
+      text,
+      isUser,
+      timestamp: new Date(),
+      culturalContext
+    };
+    setMessages(prev => [...prev, newMessage]);
+  };
+
+  const handleQuickResponse = (response: string) => {
+    addMessage(response, true);
+    setThinking(true);
+    
+    // Simulate AI response
+    setTimeout(() => {
+      const adaptedResponse = getAdaptedResponse(
+        "That's wonderful to hear! Tell me more about that.",
+        'casual',
+        { userInput: response }
+      );
+      addMessage(adaptedResponse, false, 'supportive_response');
+      setThinking(false);
+    }, 2000);
+  };
+
+  // Get cultural theme colors
+  const getCulturalColors = () => {
+    const baseColors = isHighContrast ? {
+      maori: { primary: '#000000', secondary: '#FFFFFF', accent: '#FF0000', background: '#FFFFFF' },
+      chinese: { primary: '#000000', secondary: '#FFFFFF', accent: '#FFD700', background: '#FFFFFF' },
+      western: { primary: '#000000', secondary: '#FFFFFF', accent: '#0066CC', background: '#FFFFFF' }
+    } : {
+      maori: { primary: '#8B4513', secondary: '#F5DEB3', accent: '#228B22', background: '#FFF8DC' },
+      chinese: { primary: '#DC143C', secondary: '#FFD700', accent: '#FF6347', background: '#FFF5EE' },
+      western: { primary: '#6366F1', secondary: '#E0E7FF', accent: '#8B5CF6', background: '#F9FAFB' }
+    };
+    
+    return baseColors[culturalProfile.culturalGroup];
+  };
+
+  const colors = getCulturalColors();
+
+  // Text size mappings
+  const getTextSizes = () => ({
+    small: { title: 18, body: 14, caption: 12 },
+    medium: { title: 22, body: 18, caption: 14 },
+    large: { title: 26, body: 22, caption: 16 },
+    'extra-large': { title: 32, body: 28, caption: 20 }
+  })[textSize];
+
+  const textSizes = getTextSizes();
+
   const renderChatView = () => (
-    <View style={styles.chatCard}>
-      <Text style={styles.sectionHeader} accessibilityRole="header">Conversations</Text>
-      <ScrollView style={styles.messagesContainer} contentContainerStyle={styles.messagesContent} accessibilityLabel="Chat transcript">
-        {[...messages].sort((a, b) => Number(b.id) - Number(a.id)).map((msg, index) => (
+    <View style={[styles.chatCard, { backgroundColor: colors.background }]}>
+      <Text 
+        style={[
+          styles.sectionHeader, 
+          { 
+            fontSize: textSizes.title, 
+            color: colors.primary,
+            backgroundColor: colors.secondary 
+          }
+        ]} 
+        accessibilityRole="header"
+      >
+        Recent Conversations
+      </Text>
+      <ScrollView 
+        style={styles.messagesContainer} 
+        contentContainerStyle={styles.messagesContent} 
+        accessibilityLabel="Chat transcript"
+        showsVerticalScrollIndicator={false}
+      >
+        {messages.map((msg, index) => (
           <Animatable.View
             key={msg.id}
             animation="fadeInUp"
@@ -103,26 +156,156 @@ const ChatbotScreen = () => {
               msg.isUser ? styles.userMessage : styles.aiMessage,
             ]}
           >
-            <Text style={[styles.messageText, { fontSize: 28, color: msg.isUser ? '#fff' : '#111827', lineHeight: 36 }]}>{msg.text}</Text>
+            <Text 
+              style={[
+                styles.messageText, 
+                { 
+                  fontSize: textSizes.body, 
+                  color: msg.isUser ? '#FFFFFF' : colors.primary,
+                  lineHeight: textSizes.body * 1.4
+                }
+              ]}
+            >
+              {msg.text}
+            </Text>
+            {showCulturalIndicators && msg.culturalContext && (
+              <Text 
+                style={[
+                  styles.contextText,
+                  { 
+                    fontSize: textSizes.caption,
+                    color: msg.isUser ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)'
+                  }
+                ]}
+              >
+                {msg.culturalContext}
+              </Text>
+            )}
+            <Text 
+              style={[
+                styles.timestampText,
+                { 
+                  fontSize: textSizes.caption - 2,
+                  color: msg.isUser ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.5)'
+                }
+              ]}
+            >
+              {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </Text>
           </Animatable.View>
         ))}
       </ScrollView>
     </View>
   );
 
+  const renderQuickActions = () => (
+    <View style={styles.quickActionsContainer}>
+      <Text 
+        style={[
+          styles.quickActionsTitle,
+          { 
+            fontSize: textSizes.body,
+            color: colors.primary
+          }
+        ]}
+      >
+        Quick Responses
+      </Text>
+      <View style={styles.quickActionsGrid}>
+        {[
+          "I'm feeling good today",
+          "I'd like to talk about my family",
+          "Tell me about my health",
+          "I need some support"
+        ].map((response, index) => (
+          <TouchableOpacity
+            key={index}
+            style={[
+              styles.quickActionButton,
+              { 
+                backgroundColor: isHighContrast ? colors.primary : colors.secondary,
+                borderColor: colors.primary
+              }
+            ]}
+            onPress={() => handleQuickResponse(response)}
+            accessibilityRole="button"
+            accessibilityLabel={`Quick response: ${response}`}
+          >
+            <Text 
+              style={[
+                styles.quickActionText,
+                { 
+                  fontSize: textSizes.caption,
+                  color: isHighContrast ? colors.secondary : colors.primary
+                }
+              ]}
+            >
+              {response}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </View>
+  );
+
   return (
-    <SafeAreaView style={styles.container} edges={["top","left","right"]}>
-      {/* Header with Navigation Options */}
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["top","left","right"]}>
+      {/* Header with Controls */}
       <View style={styles.headerSection}>
+        <View style={styles.accessibilityControls}>
+          <Surface style={styles.controlsPanel} elevation={2}>
+            <TouchableOpacity
+              style={[styles.controlButton, { backgroundColor: isHighContrast ? colors.accent : colors.primary }]}
+              onPress={() => setIsHighContrast(!isHighContrast)}
+              accessibilityLabel={`Toggle high contrast mode. Currently ${isHighContrast ? 'on' : 'off'}`}
+            >
+              <Icon 
+                name="contrast-circle" 
+                size={16} 
+                color={isHighContrast ? '#FFFFFF' : colors.secondary} 
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.controlButton, { backgroundColor: colors.primary }]}
+              onPress={() => {
+                const sizes: Array<'small' | 'medium' | 'large' | 'extra-large'> = ['small', 'medium', 'large', 'extra-large'];
+                const currentIndex = sizes.indexOf(textSize);
+                const nextIndex = (currentIndex + 1) % sizes.length;
+                setTextSize(sizes[nextIndex]);
+              }}
+              accessibilityLabel={`Change text size. Currently ${textSize}`}
+            >
+              <Icon 
+                name="format-size" 
+                size={16} 
+                color={colors.secondary} 
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.controlButton, { backgroundColor: showCulturalIndicators ? colors.accent : '#9CA3AF' }]}
+              onPress={() => setShowCulturalIndicators(!showCulturalIndicators)}
+              accessibilityLabel={`Toggle cultural indicators. Currently ${showCulturalIndicators ? 'on' : 'off'}`}
+            >
+              <Icon 
+                name="palette" 
+                size={16} 
+                color="#FFFFFF" 
+              />
+            </TouchableOpacity>
+          </Surface>
+        </View>
+        
         <TouchableOpacity
-          style={styles.historyButton}
+          style={[styles.historyButton, { backgroundColor: colors.secondary, borderColor: colors.primary }]}
           onPress={handleViewHistory}
           accessible={true}
           accessibilityRole="button"
           accessibilityLabel="View conversation history"
         >
-          <Icon name="history" size={24} color="#6366F1" />
-          <Text style={styles.historyButtonText}>History</Text>
+          <Icon name="history" size={20} color={colors.primary} />
+          <Text style={[styles.historyButtonText, { fontSize: textSizes.caption, color: colors.primary }]}>
+            History
+          </Text>
         </TouchableOpacity>
       </View>
       
@@ -130,36 +313,29 @@ const ChatbotScreen = () => {
       
       {/* Main Voice Interface */}
       <VoiceInterface
-        onStartListening={handleStartListening}
+        onStartListening={handleTalk}
         onStopListening={handleStopListening}
-        onEmergencyContact={handleEmergencyContact}
         isListening={isListening}
         isProcessing={isProcessing}
         isSpeaking={isSpeaking}
         isHighContrast={isHighContrast}
         textSize={textSize}
+        showCulturalIndicators={showCulturalIndicators}
       />
       
+      {/* Quick Actions */}
+      {!isListening && !isProcessing && !isSpeaking && (
+        <View style={styles.bottomSection}>
+          {renderQuickActions()}
+        </View>
+      )}
+      
       {/* Chat History (if there are messages) */}
-      {messages.length > 0 && (
+      {messages.length > 1 && (
         <View style={styles.chatSection}>
           {renderChatView()}
         </View>
       )}
-      
-      {/* Quick Access to Full Chat */}
-      <View style={styles.quickAccessContainer}>
-        <TouchableOpacity
-          onPress={handleTalk}
-          style={styles.quickAccessButton}
-          accessible
-          accessibilityRole="button"
-          accessibilityLabel="Open full conversation mode"
-        >
-          <Icon name="chat" size={24} color="#6366F1" />
-          <Text style={styles.quickAccessText}>Full Conversation</Text>
-        </TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 };
@@ -167,24 +343,124 @@ const ChatbotScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+  },
+  headerSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 10,
+  },
+  accessibilityControls: {
+    flex: 1,
+  },
+  controlsPanel: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 20,
+    padding: 4,
+    gap: 4,
+    alignSelf: 'flex-start',
+  },
+  controlButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  historyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+    gap: 6,
+  },
+  historyButtonText: {
+    fontWeight: '600',
+  },
+  bottomSection: {
+    position: 'absolute',
+    bottom: 40,
+    left: 20,
+    right: 20,
+  },
+  quickActionsContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  quickActionsTitle: {
+    fontWeight: 'bold',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  quickActionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  quickActionButton: {
+    flex: 1,
+    minWidth: '45%',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  quickActionText: {
+    fontWeight: '500',
+    textAlign: 'center',
+    lineHeight: 16,
   },
   chatSection: {
     position: 'absolute',
-    bottom: 100,
+    top: 120,
     left: 16,
     right: 16,
-    maxHeight: 200,
+    maxHeight: 300,
+  },
+  chatCard: {
+    borderRadius: 16,
+    paddingTop: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  sectionHeader: {
+    fontWeight: 'bold',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    textAlign: 'center',
+    borderRadius: 12,
+    marginBottom: 8,
   },
   messagesContainer: {
     flex: 1,
     paddingHorizontal: 16,
+    maxHeight: 200,
   },
   messagesContent: {
     paddingBottom: 16,
   },
   messageBubble: {
-    maxWidth: '80%',
+    maxWidth: '85%',
     padding: 12,
     borderRadius: 16,
     marginBottom: 8,
@@ -203,80 +479,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F4F6',
   },
   messageText: {
-    color: '#111827',
-    fontSize: 18,
+    lineHeight: 20,
   },
-  sectionHeader: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    color: '#3730A3',
-    textAlign: 'left',
-    backgroundColor: '#E0E7FF',
-    borderRadius: 12,
-    marginBottom: 8,
+  contextText: {
+    marginTop: 4,
+    fontStyle: 'italic',
+    opacity: 0.8,
   },
-  chatCard: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: 16,
-    paddingTop: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  quickAccessContainer: {
-    position: 'absolute',
-    bottom: 20,
-    right: 20,
-    zIndex: 5,
-  },
-  quickAccessButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 25,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    gap: 8,
-  },
-  quickAccessText: {
-    color: '#6366F1',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  headerSection: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 10,
-  },
-  historyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-    gap: 6,
-  },
-  historyButtonText: {
-    color: '#6366F1',
-    fontSize: 14,
-    fontWeight: '600',
+  timestampText: {
+    marginTop: 4,
+    opacity: 0.6,
+    textAlign: 'right',
   },
 });
 

@@ -7,13 +7,13 @@ import { useCulturalContext } from '../../contexts/CulturalContext';
 
 interface VoiceInterfaceProps {
   onStartListening: () => void;
-  onStopListening: () => void;
-  onEmergencyContact: () => void;
+  onStopListening?: () => void;
   isListening: boolean;
   isProcessing: boolean;
   isSpeaking: boolean;
   isHighContrast?: boolean;
   textSize?: 'small' | 'medium' | 'large' | 'extra-large';
+  showCulturalIndicators?: boolean;
 }
 
 type ConversationState = 'idle' | 'listening' | 'processing' | 'speaking';
@@ -21,15 +21,14 @@ type ConversationState = 'idle' | 'listening' | 'processing' | 'speaking';
 const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
   onStartListening,
   onStopListening,
-  onEmergencyContact,
   isListening,
   isProcessing,
   isSpeaking,
   isHighContrast = false,
-  textSize = 'large'
+  textSize = 'large',
+  showCulturalIndicators = true
 }) => {
   const { culturalProfile, getCulturalGreeting } = useCulturalContext();
-  const [showEmergencyModal, setShowEmergencyModal] = useState(false);
   const [greeting, setGreeting] = useState('');
   
   // Animation values
@@ -136,20 +135,10 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
     Vibration.vibrate(50);
     
     if (isListening) {
-      onStopListening();
+      onStopListening?.();
     } else {
       onStartListening();
     }
-  };
-
-  const handleEmergencyPress = () => {
-    Vibration.vibrate([100, 50, 100]);
-    setShowEmergencyModal(true);
-  };
-
-  const confirmEmergency = () => {
-    setShowEmergencyModal(false);
-    onEmergencyContact();
   };
 
   const getMainButtonIcon = () => {
@@ -164,21 +153,21 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
   const getStateText = () => {
     const stateTexts = {
       maori: {
-        idle: 'Tēnā koe - Karawhiua',
+        idle: 'Tēnā koe - Pēhea koe?',
         listening: 'Kei te whakarongo...',
         processing: 'Kei te whakaaroaro...',
         speaking: 'Kei te kōrero...'
       },
       chinese: {
-        idle: '您好 - 准备开始',
+        idle: '您好 - 我在这里倾听',
         listening: '正在聆听...',
         processing: '正在思考...',
         speaking: '正在说话...'
       },
       western: {
-        idle: 'Ready to Chat',
+        idle: 'Ready to Listen',
         listening: 'Listening...',
-        processing: 'Thinking...',
+        processing: 'Processing...',
         speaking: 'Speaking...'
       }
     };
@@ -189,20 +178,26 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
   const renderProcessingIndicator = () => {
     if (!isProcessing) return null;
 
-    const ProcessingComponent = culturalProfile.culturalGroup === 'maori' ? 
-      // Koru spiral for Māori
-      <Animatable.View animation="rotate" iterationCount="infinite" duration={2000}>
-        <Icon name="spiral" size={60} color={colors.primary} />
-      </Animatable.View> :
-      culturalProfile.culturalGroup === 'chinese' ?
-      // Yin-yang for Chinese
-      <Animatable.View animation="rotate" iterationCount="infinite" duration={1500}>
-        <Icon name="yin-yang" size={60} color={colors.primary} />
-      </Animatable.View> :
-      // Gear for Western
+    const ProcessingComponent = showCulturalIndicators ? (
+      culturalProfile.culturalGroup === 'maori' ? 
+        // Koru spiral for Māori
+        <Animatable.View animation="rotate" iterationCount="infinite" duration={2000}>
+          <Icon name="spiral" size={60} color={colors.primary} />
+        </Animatable.View> :
+        culturalProfile.culturalGroup === 'chinese' ?
+        // Yin-yang for Chinese
+        <Animatable.View animation="rotate" iterationCount="infinite" duration={1500}>
+          <Icon name="yin-yang" size={60} color={colors.primary} />
+        </Animatable.View> :
+        // Gear for Western
+        <Animatable.View animation="rotate" iterationCount="infinite" duration={1000}>
+          <Icon name="cog" size={60} color={colors.primary} />
+        </Animatable.View>
+    ) : (
       <Animatable.View animation="rotate" iterationCount="infinite" duration={1000}>
-        <Icon name="cog" size={60} color={colors.primary} />
-      </Animatable.View>;
+        <Icon name="brain" size={60} color={colors.primary} />
+      </Animatable.View>
+    );
 
     return (
       <View style={styles.processingContainer}>
@@ -283,7 +278,11 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
           <TouchableOpacity
             style={[
               styles.mainButton,
-              { backgroundColor: isHighContrast ? '#000000' : colors.secondary }
+              { 
+                backgroundColor: isListening 
+                  ? (isHighContrast ? '#FF0000' : '#EF4444')
+                  : (isHighContrast ? '#000000' : colors.primary)
+              }
             ]}
             onPress={handleMainButtonPress}
             accessible={true}
@@ -294,79 +293,30 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
             <Icon 
               name={getMainButtonIcon()} 
               size={80} 
-              color={isHighContrast ? '#FFFFFF' : colors.primary} 
+              color="#FFFFFF"
             />
           </TouchableOpacity>
         </Animated.View>
       </Surface>
 
-      {/* Emergency Contact Button */}
-      <View style={styles.emergencyContainer}>
-        <TouchableOpacity
+      {/* Conversation Instructions */}
+      <View style={styles.instructionsContainer}>
+        <Text 
           style={[
-            styles.emergencyButton,
-            { backgroundColor: isHighContrast ? '#FF0000' : colors.accent }
+            styles.instructionsText, 
+            { 
+              fontSize: textSizes.body,
+              color: isHighContrast ? '#FFFFFF' : 'rgba(255, 255, 255, 0.8)'
+            }
           ]}
-          onPress={handleEmergencyPress}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel="Emergency contact"
-          accessibilityHint="Double tap to call emergency contact"
+          accessibilityRole="text"
         >
-          <Icon name="phone-alert" size={40} color="#FFFFFF" />
-          <Text style={[styles.emergencyText, { fontSize: textSizes.button }]}>
-            Emergency
-          </Text>
-        </TouchableOpacity>
+          {isListening ? 'Speak naturally - I\'m listening' : 
+           isSpeaking ? 'Please wait while I respond' :
+           isProcessing ? 'Processing your message...' :
+           'Tap the button to start our conversation'}
+        </Text>
       </View>
-
-      {/* Emergency Confirmation Modal */}
-      <Portal>
-        <Modal
-          visible={showEmergencyModal}
-          onDismiss={() => setShowEmergencyModal(false)}
-          contentContainerStyle={[
-            styles.modalContainer,
-            { backgroundColor: isHighContrast ? '#000000' : '#FFFFFF' }
-          ]}
-        >
-          <Text 
-            style={[
-              styles.modalTitle, 
-              { 
-                fontSize: textSizes.title, 
-                color: isHighContrast ? '#FFFFFF' : '#000000' 
-              }
-            ]}
-          >
-            Call Emergency Contact?
-          </Text>
-          <View style={styles.modalButtons}>
-            <TouchableOpacity
-              style={[styles.modalButton, { backgroundColor: '#EF4444' }]}
-              onPress={confirmEmergency}
-              accessible={true}
-              accessibilityRole="button"
-              accessibilityLabel="Confirm emergency call"
-            >
-              <Text style={[styles.modalButtonText, { fontSize: textSizes.button }]}>
-                Yes, Call Now
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.modalButton, { backgroundColor: '#6B7280' }]}
-              onPress={() => setShowEmergencyModal(false)}
-              accessible={true}
-              accessibilityRole="button"
-              accessibilityLabel="Cancel emergency call"
-            >
-              <Text style={[styles.modalButtonText, { fontSize: textSizes.button }]}>
-                Cancel
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </Modal>
-      </Portal>
     </View>
   );
 };
@@ -425,53 +375,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  emergencyContainer: {
+  instructionsContainer: {
     position: 'absolute',
     bottom: 40,
     alignItems: 'center',
+    paddingHorizontal: 40,
   },
-  emergencyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderRadius: 25,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-  },
-  emergencyText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    marginLeft: 8,
-  },
-  modalContainer: {
-    margin: 20,
-    padding: 30,
-    borderRadius: 20,
-    alignItems: 'center',
-  },
-  modalTitle: {
-    fontWeight: 'bold',
-    marginBottom: 30,
+  instructionsText: {
     textAlign: 'center',
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    gap: 15,
-  },
-  modalButton: {
-    paddingHorizontal: 25,
-    paddingVertical: 15,
-    borderRadius: 15,
-    minWidth: 120,
-  },
-  modalButtonText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    textAlign: 'center',
+    fontWeight: '500',
+    lineHeight: 20,
+    opacity: 0.9,
   },
 });
 
