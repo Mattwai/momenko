@@ -7,8 +7,8 @@ import {
   EmotionalState, 
   ConversationContext,
   CulturalProfile,
-  CulturalGroup,
-  PreferredLanguage,
+  CulturalGroup as _CulturalGroup,
+  PreferredLanguage as _PreferredLanguage,
   AudioState
 } from '../types';
 import CulturalContextService from '../services/cultural/CulturalContextService';
@@ -164,7 +164,7 @@ export const useConversationState = (userId: string): ConversationStateHook => {
         const parsedState = JSON.parse(stored);
         // Convert date strings back to Date objects
         parsedState.lastInteraction = new Date(parsedState.lastInteraction);
-        parsedState.messages = parsedState.messages.map((msg: any) => ({
+        parsedState.messages = parsedState.messages.map((msg: ConversationMessage) => ({
           ...msg,
           timestamp: new Date(msg.timestamp)
         }));
@@ -182,7 +182,7 @@ export const useConversationState = (userId: string): ConversationStateHook => {
     try {
       const stored = await AsyncStorage.getItem(INTERRUPTION_KEY);
       if (stored) {
-        const parsedInterruptions = JSON.parse(stored).map((int: any) => ({
+        const parsedInterruptions = JSON.parse(stored).map((int: { timestamp: string; [key: string]: unknown }) => ({
           ...int,
           timestamp: new Date(int.timestamp)
         }));
@@ -370,7 +370,7 @@ export const useConversationState = (userId: string): ConversationStateHook => {
     }
   };
 
-  const updateCulturalMetrics = (content: string, speaker: 'user' | 'assistant'): void => {
+  const updateCulturalMetrics = (content: string, _speaker: 'user' | 'assistant'): void => {
     if (!conversationState) return;
 
     const culturalGroup = conversationState.culturalProfile.culturalGroup;
@@ -421,7 +421,7 @@ export const useConversationState = (userId: string): ConversationStateHook => {
     } : null);
   };
 
-  const setEmotionalState = (state: EmotionalState): void => {
+  const setEmotionalState = (_state: EmotionalState): void => {
     // This would typically be set on individual messages rather than conversation state
     // but we can track it for context
     lastInteractionTime.current = new Date();

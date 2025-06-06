@@ -288,7 +288,7 @@ class SpeechCacheService {
     }
   }
 
-  private async generateSpeechAudio(content: string, culturalGroup: CulturalGroup): Promise<string> {
+  private async generateSpeechAudio(_content: string, _culturalGroup: CulturalGroup): Promise<string> {
     // This is a placeholder - implement integration with your speech synthesis service
     // Return a URL or file path to the generated audio
     return `audio_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.mp3`;

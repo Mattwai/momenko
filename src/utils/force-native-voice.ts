@@ -21,9 +21,9 @@ export function forceNativeVoiceMode(force: boolean = true): void {
   // Override any global __DEV__ checks that might trigger simulation mode
   if (force) {
     // Note: This is a bit of a hack, but it helps ensure native mode
-    (globalThis as any).__FORCE_NATIVE_VOICE__ = true;
+    (globalThis as typeof globalThis & { __FORCE_NATIVE_VOICE__?: boolean }).__FORCE_NATIVE_VOICE__ = true;
   } else {
-    delete (globalThis as any).__FORCE_NATIVE_VOICE__;
+    delete (globalThis as typeof globalThis & { __FORCE_NATIVE_VOICE__?: boolean }).__FORCE_NATIVE_VOICE__;
   }
 }
 
@@ -31,7 +31,7 @@ export function forceNativeVoiceMode(force: boolean = true): void {
  * Check if native voice mode is being forced
  */
 export function isNativeVoiceForced(): boolean {
-  return forceNativeMode || !!(globalThis as any).__FORCE_NATIVE_VOICE__;
+  return forceNativeMode || !!(globalThis as typeof globalThis & { __FORCE_NATIVE_VOICE__?: boolean }).__FORCE_NATIVE_VOICE__;
 }
 
 /**
@@ -45,7 +45,7 @@ export function shouldUseSimulationMode(): boolean {
   }
   
   // Default check for simulation environments
-  return (globalThis as any).__DEV__ === true;
+  return (globalThis as typeof globalThis & { __DEV__?: boolean }).__DEV__ === true;
 }
 
 /**
