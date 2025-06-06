@@ -1,11 +1,25 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Share, Alert } from 'react-native';
-import { Text, Surface, Searchbar, IconButton, Menu, Divider, Chip } from 'react-native-paper';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import * as Animatable from 'react-native-animatable';
-import { useCulturalContext } from '../../contexts/CulturalContext';
-import { format, formatDistanceToNow } from 'date-fns';
-import { enUS, zhCN } from 'date-fns/locale';
+import { format } from "date-fns";
+import { enUS, zhCN } from "date-fns/locale";
+import React, { useMemo, useState } from "react";
+import {
+  Alert,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import * as Animatable from "react-native-animatable";
+import {
+  Chip,
+  Divider,
+  IconButton,
+  Menu,
+  Searchbar,
+  Surface,
+  Text,
+} from "react-native-paper";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { useCulturalContext } from "../../contexts/CulturalContext";
 
 interface ConversationMessage {
   id: string;
@@ -14,7 +28,7 @@ interface ConversationMessage {
   isUser: boolean;
   culturalContext?: string;
   emotions?: string[];
-  language: 'en' | 'mi' | 'zh';
+  language: "en" | "mi" | "zh";
 }
 
 interface ConversationSession {
@@ -33,7 +47,7 @@ interface ConversationHistoryProps {
   onExportSession?: (session: ConversationSession) => void;
   onShareWithFamily?: (session: ConversationSession) => void;
   isHighContrast?: boolean;
-  textSize?: 'small' | 'medium' | 'large' | 'extra-large';
+  textSize?: "small" | "medium" | "large" | "extra-large";
   showCulturalIndicators?: boolean;
 }
 
@@ -43,67 +57,111 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
   onExportSession,
   onShareWithFamily,
   isHighContrast = false,
-  textSize = 'large',
-  showCulturalIndicators = true
+  textSize = "large",
+  showCulturalIndicators = true,
 }) => {
-  const { culturalProfile, getFamilyInvolvementGuidance } = useCulturalContext();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedLanguage, setSelectedLanguage] = useState<'all' | 'en' | 'mi' | 'zh'>('all');
-  const [sortBy, setSortBy] = useState<'date' | 'duration' | 'cultural'>('date');
-  const [expandedSessions, setExpandedSessions] = useState<Set<string>>(new Set());
+  const { culturalProfile, getFamilyInvolvementGuidance } =
+    useCulturalContext();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedLanguage, setSelectedLanguage] = useState<
+    "all" | "en" | "mi" | "zh"
+  >("all");
+  const [sortBy, setSortBy] = useState<"date" | "duration" | "cultural">(
+    "date"
+  );
+  const [expandedSessions, setExpandedSessions] = useState<Set<string>>(
+    new Set()
+  );
   const [menuVisible, setMenuVisible] = useState(false);
 
   // Cultural colors and styling
   const getCulturalColors = () => {
-    const baseColors = isHighContrast ? {
-      maori: { primary: '#000000', secondary: '#FFFFFF', accent: '#FF0000', background: '#FFFFFF' },
-      chinese: { primary: '#000000', secondary: '#FFFFFF', accent: '#FFD700', background: '#FFFFFF' },
-      western: { primary: '#000000', secondary: '#FFFFFF', accent: '#0066CC', background: '#FFFFFF' }
-    } : {
-      maori: { primary: '#8B4513', secondary: '#F5DEB3', accent: '#228B22', background: '#FFF8DC' },
-      chinese: { primary: '#DC143C', secondary: '#FFD700', accent: '#FF6347', background: '#FFF5EE' },
-      western: { primary: '#6366F1', secondary: '#E0E7FF', accent: '#8B5CF6', background: '#F9FAFB' }
-    };
-    
+    const baseColors = isHighContrast
+      ? {
+          maori: {
+            primary: "#000000",
+            secondary: "#FFFFFF",
+            accent: "#FF0000",
+            background: "#FFFFFF",
+          },
+          chinese: {
+            primary: "#000000",
+            secondary: "#FFFFFF",
+            accent: "#FFD700",
+            background: "#FFFFFF",
+          },
+          western: {
+            primary: "#000000",
+            secondary: "#FFFFFF",
+            accent: "#0066CC",
+            background: "#FFFFFF",
+          },
+        }
+      : {
+          maori: {
+            primary: "#8B4513",
+            secondary: "#F5DEB3",
+            accent: "#228B22",
+            background: "#FFF8DC",
+          },
+          chinese: {
+            primary: "#DC143C",
+            secondary: "#FFD700",
+            accent: "#FF6347",
+            background: "#FFF5EE",
+          },
+          western: {
+            primary: "#6366F1",
+            secondary: "#E0E7FF",
+            accent: "#8B5CF6",
+            background: "#F9FAFB",
+          },
+        };
+
     return baseColors[culturalProfile.culturalGroup];
   };
 
   const colors = getCulturalColors();
 
   // Text size mappings
-  const getTextSizes = () => ({
-    small: { title: 18, body: 14, caption: 12 },
-    medium: { title: 22, body: 18, caption: 14 },
-    large: { title: 26, body: 22, caption: 16 },
-    'extra-large': { title: 32, body: 28, caption: 20 }
-  })[textSize];
+  const getTextSizes = () =>
+    ({
+      small: { title: 18, body: 14, caption: 12 },
+      medium: { title: 22, body: 18, caption: 14 },
+      large: { title: 26, body: 22, caption: 16 },
+      "extra-large": { title: 32, body: 28, caption: 20 },
+    }[textSize]);
 
   const textSizes = getTextSizes();
 
   // Cultural date formatting
   const getDateLocale = () => {
     switch (culturalProfile.culturalGroup) {
-      case 'chinese': return zhCN;
-      default: return enUS;
+      case "chinese":
+        return zhCN;
+      default:
+        return enUS;
     }
   };
 
   // Filter and sort sessions
   const filteredSessions = useMemo(() => {
-    let filtered = sessions.filter(session => {
+    let filtered = sessions.filter((session) => {
       // Text search
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         const sessionText = session.messages
-          .map(m => m.content)
-          .join(' ')
+          .map((m) => m.content)
+          .join(" ")
           .toLowerCase();
         if (!sessionText.includes(query)) return false;
       }
 
       // Language filter
-      if (selectedLanguage !== 'all') {
-        const hasLanguage = session.messages.some(m => m.language === selectedLanguage);
+      if (selectedLanguage !== "all") {
+        const hasLanguage = session.messages.some(
+          (m) => m.language === selectedLanguage
+        );
         if (!hasLanguage) return false;
       }
 
@@ -113,19 +171,18 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
     // Sort sessions
     filtered.sort((a, b) => {
       switch (sortBy) {
-        case 'date':
+        case "date":
           return b.startTime.getTime() - a.startTime.getTime();
-        case 'duration': {
-<<<<<<< Updated upstream
-          const aDuration = (a.endTime?.getTime() || Date.now()) - a.startTime.getTime();
-          const bDuration = (b.endTime?.getTime() || Date.now()) - b.startTime.getTime();
-=======
-          const aDuration = a.endTime ? a.endTime.getTime() - a.startTime.getTime() : 0;
-          const bDuration = b.endTime ? b.endTime.getTime() - b.startTime.getTime() : 0;
->>>>>>> Stashed changes
+        case "duration": {
+          const aDuration = a.endTime
+            ? a.endTime.getTime() - a.startTime.getTime()
+            : 0;
+          const bDuration = b.endTime
+            ? b.endTime.getTime() - b.startTime.getTime()
+            : 0;
           return bDuration - aDuration;
         }
-        case 'cultural':
+        case "cultural":
           return a.culturalProfile.localeCompare(b.culturalProfile);
         default:
           return 0;
@@ -147,18 +204,18 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
 
   const handleShareWithFamily = async (session: ConversationSession) => {
     const familyGuidance = getFamilyInvolvementGuidance();
-    
-    if (familyGuidance.level === 'high') {
+
+    if (familyGuidance.level === "high") {
       // For cultures with high family involvement, share directly
       onShareWithFamily?.(session);
     } else {
       // Show privacy confirmation for other cultures
       Alert.alert(
-        'Share with Family',
-        'Would you like to share this conversation with your family members?',
+        "Share with Family",
+        "Would you like to share this conversation with your family members?",
         [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Share', onPress: () => onShareWithFamily?.(session) }
+          { text: "Cancel", style: "cancel" },
+          { text: "Share", onPress: () => onShareWithFamily?.(session) },
         ]
       );
     }
@@ -166,31 +223,42 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
 
   const handleExport = (session: ConversationSession) => {
     Alert.alert(
-      'Export Conversation',
-      'Choose export format for healthcare provider:',
+      "Export Conversation",
+      "Choose export format for healthcare provider:",
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'PDF Summary', onPress: () => onExportSession?.(session) },
-        { text: 'Full Transcript', onPress: () => onExportSession?.(session) }
+        { text: "Cancel", style: "cancel" },
+        { text: "PDF Summary", onPress: () => onExportSession?.(session) },
+        { text: "Full Transcript", onPress: () => onExportSession?.(session) },
       ]
     );
   };
 
   const getCulturalIndicator = (session: ConversationSession) => {
     const indicators = {
-      maori: { icon: 'leaf', color: '#228B22', label: 'Whānau-centered' },
-      chinese: { icon: 'yin-yang', color: '#FFD700', label: 'Family-respectful' },
-      western: { icon: 'account', color: '#6366F1', label: 'Individual-focused' }
+      maori: { icon: "leaf", color: "#228B22", label: "Whānau-centered" },
+      chinese: {
+        icon: "yin-yang",
+        color: "#FFD700",
+        label: "Family-respectful",
+      },
+      western: {
+        icon: "account",
+        color: "#6366F1",
+        label: "Individual-focused",
+      },
     };
-    
-    return indicators[session.culturalProfile as keyof typeof indicators] || indicators.western;
+
+    return (
+      indicators[session.culturalProfile as keyof typeof indicators] ||
+      indicators.western
+    );
   };
 
   const getLanguageLabel = (language: string) => {
     const labels = {
-      'en': 'English',
-      'mi': 'Te Reo Māori',
-      'zh': '中文'
+      en: "English",
+      mi: "Te Reo Māori",
+      zh: "中文",
     };
     return labels[language as keyof typeof labels] || language;
   };
@@ -203,51 +271,63 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
       style={[
         styles.messageBubble,
         message.isUser ? styles.userMessage : styles.aiMessage,
-        { backgroundColor: message.isUser ? colors.primary : colors.secondary }
+        { backgroundColor: message.isUser ? colors.primary : colors.secondary },
       ]}
     >
-      <Text 
+      <Text
         style={[
-          styles.messageText, 
-          { 
+          styles.messageText,
+          {
             fontSize: textSizes.body,
-            color: message.isUser ? 
-              (isHighContrast ? '#FFFFFF' : colors.secondary) : 
-              (isHighContrast ? '#000000' : colors.primary)
-          }
+            color: message.isUser
+              ? isHighContrast
+                ? "#FFFFFF"
+                : colors.secondary
+              : isHighContrast
+              ? "#000000"
+              : colors.primary,
+          },
         ]}
       >
         {message.content}
       </Text>
-      
+
       {showCulturalIndicators && message.culturalContext && (
-        <Text 
+        <Text
           style={[
-            styles.contextText, 
-            { 
+            styles.contextText,
+            {
               fontSize: textSizes.caption,
-              color: message.isUser ? 
-                (isHighContrast ? '#CCCCCC' : colors.secondary) : 
-                (isHighContrast ? '#666666' : colors.primary)
-            }
+              color: message.isUser
+                ? isHighContrast
+                  ? "#CCCCCC"
+                  : colors.secondary
+                : isHighContrast
+                ? "#666666"
+                : colors.primary,
+            },
           ]}
         >
           Context: {message.culturalContext}
         </Text>
       )}
-      
-      <Text 
+
+      <Text
         style={[
-          styles.timestampText, 
-          { 
+          styles.timestampText,
+          {
             fontSize: textSizes.caption,
-            color: message.isUser ? 
-              (isHighContrast ? '#CCCCCC' : colors.secondary) : 
-              (isHighContrast ? '#666666' : colors.primary)
-          }
+            color: message.isUser
+              ? isHighContrast
+                ? "#CCCCCC"
+                : colors.secondary
+              : isHighContrast
+              ? "#666666"
+              : colors.primary,
+          },
         ]}
       >
-        {format(message.timestamp, 'HH:mm', { locale: getDateLocale() })}
+        {format(message.timestamp, "HH:mm", { locale: getDateLocale() })}
       </Text>
     </Animatable.View>
   );
@@ -255,16 +335,19 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
   const renderSession = (session: ConversationSession) => {
     const isExpanded = expandedSessions.has(session.id);
     const culturalIndicator = getCulturalIndicator(session);
-    const duration = session.endTime ? 
-      Math.round((session.endTime.getTime() - session.startTime.getTime()) / (1000 * 60)) : 
-      0;
+    const duration = session.endTime
+      ? Math.round(
+          (session.endTime.getTime() - session.startTime.getTime()) /
+            (1000 * 60)
+        )
+      : 0;
 
     return (
-      <Surface 
+      <Surface
         key={session.id}
         style={[
-          styles.sessionCard, 
-          { backgroundColor: isHighContrast ? '#FFFFFF' : colors.background }
+          styles.sessionCard,
+          { backgroundColor: isHighContrast ? "#FFFFFF" : colors.background },
         ]}
         elevation={2}
       >
@@ -273,53 +356,60 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
           onPress={() => toggleSessionExpansion(session.id)}
           accessible={true}
           accessibilityRole="button"
-          accessibilityLabel={`Conversation from ${format(session.startTime, 'PPp', { locale: getDateLocale() })}`}
+          accessibilityLabel={`Conversation from ${format(
+            session.startTime,
+            "PPp",
+            { locale: getDateLocale() }
+          )}`}
         >
           <View style={styles.sessionInfo}>
-            <Text 
+            <Text
               style={[
-                styles.sessionDate, 
-                { 
+                styles.sessionDate,
+                {
                   fontSize: textSizes.title,
-                  color: isHighContrast ? '#000000' : colors.primary
-                }
+                  color: isHighContrast ? "#000000" : colors.primary,
+                },
               ]}
             >
-              {format(session.startTime, 'PPp', { locale: getDateLocale() })}
+              {format(session.startTime, "PPp", { locale: getDateLocale() })}
             </Text>
-            
+
             <View style={styles.sessionMeta}>
               {showCulturalIndicators && (
-                <Chip 
+                <Chip
                   icon={culturalIndicator.icon}
-                  style={[styles.culturalChip, { backgroundColor: culturalIndicator.color }]}
-                  textStyle={{ color: '#FFFFFF', fontSize: textSizes.caption }}
+                  style={[
+                    styles.culturalChip,
+                    { backgroundColor: culturalIndicator.color },
+                  ]}
+                  textStyle={{ color: "#FFFFFF", fontSize: textSizes.caption }}
                 >
                   {culturalIndicator.label}
                 </Chip>
               )}
-              
-              <Text 
+
+              <Text
                 style={[
-                  styles.sessionDuration, 
-                  { 
+                  styles.sessionDuration,
+                  {
                     fontSize: textSizes.caption,
-                    color: isHighContrast ? '#666666' : colors.primary
-                  }
+                    color: isHighContrast ? "#666666" : colors.primary,
+                  },
                 ]}
               >
                 {duration} minutes • {session.messages.length} messages
               </Text>
             </View>
-            
+
             {session.summary && (
-              <Text 
+              <Text
                 style={[
-                  styles.sessionSummary, 
-                  { 
+                  styles.sessionSummary,
+                  {
                     fontSize: textSizes.body,
-                    color: isHighContrast ? '#333333' : colors.primary
-                  }
+                    color: isHighContrast ? "#333333" : colors.primary,
+                  },
                 ]}
                 numberOfLines={2}
               >
@@ -327,48 +417,66 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
               </Text>
             )}
           </View>
-          
+
           <View style={styles.sessionActions}>
             <IconButton
-              icon={isExpanded ? 'chevron-up' : 'chevron-down'}
+              icon={isExpanded ? "chevron-up" : "chevron-down"}
               size={30}
-              iconColor={isHighContrast ? '#000000' : colors.primary}
+              iconColor={isHighContrast ? "#000000" : colors.primary}
             />
           </View>
         </TouchableOpacity>
 
         {isExpanded && (
           <View style={styles.sessionContent}>
-            <ScrollView 
+            <ScrollView
               style={styles.messagesScrollView}
               showsVerticalScrollIndicator={false}
             >
-              {session.messages.map((message, index) => renderMessage(message, index))}
+              {session.messages.map((message, index) =>
+                renderMessage(message, index)
+              )}
             </ScrollView>
-            
+
             <View style={styles.sessionActionsBar}>
               <TouchableOpacity
-                style={[styles.actionButton, { backgroundColor: colors.accent }]}
+                style={[
+                  styles.actionButton,
+                  { backgroundColor: colors.accent },
+                ]}
                 onPress={() => handleShareWithFamily(session)}
                 accessible={true}
                 accessibilityRole="button"
                 accessibilityLabel="Share with family"
               >
                 <Icon name="share-variant" size={20} color="#FFFFFF" />
-                <Text style={[styles.actionButtonText, { fontSize: textSizes.caption }]}>
+                <Text
+                  style={[
+                    styles.actionButtonText,
+                    { fontSize: textSizes.caption },
+                  ]}
+                >
                   Family
                 </Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity
-                style={[styles.actionButton, { backgroundColor: colors.primary }]}
+                style={[
+                  styles.actionButton,
+                  { backgroundColor: colors.primary },
+                ]}
                 onPress={() => handleExport(session)}
                 accessible={true}
                 accessibilityRole="button"
                 accessibilityLabel="Export for healthcare provider"
               >
                 <Icon name="download" size={20} color="#FFFFFF" />
-                <Text style={[styles.actionButtonText, { fontSize: textSizes.caption }]}>
+                <Text
+                  style={[
+                    styles.actionButtonText,
+                    { fontSize: textSizes.caption },
+                  ]}
+                >
                   Export
                 </Text>
               </TouchableOpacity>
@@ -388,12 +496,12 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
           onChangeText={setSearchQuery}
           value={searchQuery}
           style={[
-            styles.searchbar, 
-            { backgroundColor: isHighContrast ? '#FFFFFF' : colors.secondary }
+            styles.searchbar,
+            { backgroundColor: isHighContrast ? "#FFFFFF" : colors.secondary },
           ]}
           inputStyle={{ fontSize: textSizes.body }}
         />
-        
+
         <Menu
           visible={menuVisible}
           onDismiss={() => setMenuVisible(false)}
@@ -401,65 +509,83 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
             <IconButton
               icon="filter-variant"
               size={30}
-              iconColor={isHighContrast ? '#000000' : colors.primary}
+              iconColor={isHighContrast ? "#000000" : colors.primary}
               onPress={() => setMenuVisible(true)}
             />
           }
         >
-          <Menu.Item 
-            title="All Languages" 
-            onPress={() => { setSelectedLanguage('all'); setMenuVisible(false); }}
+          <Menu.Item
+            title="All Languages"
+            onPress={() => {
+              setSelectedLanguage("all");
+              setMenuVisible(false);
+            }}
             titleStyle={{ fontSize: textSizes.body }}
           />
-          <Menu.Item 
-            title="English" 
-            onPress={() => { setSelectedLanguage('en'); setMenuVisible(false); }}
+          <Menu.Item
+            title="English"
+            onPress={() => {
+              setSelectedLanguage("en");
+              setMenuVisible(false);
+            }}
             titleStyle={{ fontSize: textSizes.body }}
           />
-          <Menu.Item 
-            title="Te Reo Māori" 
-            onPress={() => { setSelectedLanguage('mi'); setMenuVisible(false); }}
+          <Menu.Item
+            title="Te Reo Māori"
+            onPress={() => {
+              setSelectedLanguage("mi");
+              setMenuVisible(false);
+            }}
             titleStyle={{ fontSize: textSizes.body }}
           />
-          <Menu.Item 
-            title="中文" 
-            onPress={() => { setSelectedLanguage('zh'); setMenuVisible(false); }}
+          <Menu.Item
+            title="中文"
+            onPress={() => {
+              setSelectedLanguage("zh");
+              setMenuVisible(false);
+            }}
             titleStyle={{ fontSize: textSizes.body }}
           />
           <Divider />
-          <Menu.Item 
-            title="Sort by Date" 
-            onPress={() => { setSortBy('date'); setMenuVisible(false); }}
+          <Menu.Item
+            title="Sort by Date"
+            onPress={() => {
+              setSortBy("date");
+              setMenuVisible(false);
+            }}
             titleStyle={{ fontSize: textSizes.body }}
           />
-          <Menu.Item 
-            title="Sort by Duration" 
-            onPress={() => { setSortBy('duration'); setMenuVisible(false); }}
+          <Menu.Item
+            title="Sort by Duration"
+            onPress={() => {
+              setSortBy("duration");
+              setMenuVisible(false);
+            }}
             titleStyle={{ fontSize: textSizes.body }}
           />
         </Menu>
       </View>
 
       {/* Conversations List */}
-      <ScrollView 
+      <ScrollView
         style={styles.sessionsList}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.sessionsContent}
       >
         {filteredSessions.length === 0 ? (
           <View style={styles.emptyState}>
-            <Icon 
-              name="chat-outline" 
-              size={64} 
-              color={isHighContrast ? '#666666' : colors.primary} 
+            <Icon
+              name="chat-outline"
+              size={64}
+              color={isHighContrast ? "#666666" : colors.primary}
             />
-            <Text 
+            <Text
               style={[
-                styles.emptyText, 
-                { 
+                styles.emptyText,
+                {
                   fontSize: textSizes.title,
-                  color: isHighContrast ? '#666666' : colors.primary
-                }
+                  color: isHighContrast ? "#666666" : colors.primary,
+                },
               ]}
             >
               No conversations found
@@ -478,8 +604,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 16,
     gap: 8,
   },
@@ -496,22 +622,22 @@ const styles = StyleSheet.create({
   },
   sessionCard: {
     borderRadius: 16,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   sessionHeader: {
-    flexDirection: 'row',
+    flexDirection: "row",
     padding: 16,
   },
   sessionInfo: {
     flex: 1,
   },
   sessionDate: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 8,
   },
   sessionMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     marginBottom: 8,
   },
@@ -526,34 +652,34 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   sessionActions: {
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   sessionContent: {
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: "#E5E7EB",
   },
   messagesScrollView: {
     maxHeight: 300,
     padding: 16,
   },
   messageBubble: {
-    maxWidth: '85%',
+    maxWidth: "85%",
     padding: 12,
     borderRadius: 16,
     marginBottom: 8,
   },
   userMessage: {
-    alignSelf: 'flex-end',
+    alignSelf: "flex-end",
   },
   aiMessage: {
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
   },
   messageText: {
     lineHeight: 24,
   },
   contextText: {
     marginTop: 4,
-    fontStyle: 'italic',
+    fontStyle: "italic",
     opacity: 0.8,
   },
   timestampText: {
@@ -561,32 +687,32 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   sessionActionsBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    flexDirection: "row",
+    justifyContent: "space-around",
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: "#E5E7EB",
   },
   actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
     gap: 4,
   },
   actionButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
+    color: "#FFFFFF",
+    fontWeight: "600",
   },
   emptyState: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingVertical: 64,
   },
   emptyText: {
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 16,
     opacity: 0.7,
   },
