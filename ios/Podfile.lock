@@ -315,9 +315,6 @@ PODS:
     - Yoga
   - ExpoSpeech (13.1.7):
     - ExpoModulesCore
-  - EXSplashScreen (0.17.5):
-    - ExpoModulesCore
-    - React-Core
   - EXTaskManager (13.1.5):
     - ExpoModulesCore
     - UMAppLoader
@@ -2431,7 +2428,6 @@ DEPENDENCIES:
   - ExpoLinearGradient (from `../node_modules/expo-linear-gradient/ios`)
   - ExpoModulesCore (from `../node_modules/expo-modules-core`)
   - ExpoSpeech (from `../node_modules/expo-speech/ios`)
-  - EXSplashScreen (from `../node_modules/expo-splash-screen/ios`)
   - EXTaskManager (from `../node_modules/expo-task-manager/ios`)
   - EXUpdatesInterface (from `../node_modules/expo-updates-interface/ios`)
   - fast_float (from `../node_modules/react-native/third-party-podspecs/fast_float.podspec`)
@@ -2565,8 +2561,6 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-modules-core"
   ExpoSpeech:
     :path: "../node_modules/expo-speech/ios"
-  EXSplashScreen:
-    :path: "../node_modules/expo-splash-screen/ios"
   EXTaskManager:
     :path: "../node_modules/expo-task-manager/ios"
   EXUpdatesInterface:
@@ -2755,7 +2749,6 @@ SPEC CHECKSUMS:
   ExpoLinearGradient: 42e58f6db5ebc20b6fbbf7d31013264644ab12a4
   ExpoModulesCore: 7d3df5142e9446b063d8ae8ace4b6e27a1aa2928
   ExpoSpeech: fceabf6bf31aa9530ef0696e6793571edb702068
-  EXSplashScreen: 3e989924f61a8dd07ee4ea584c6ba14be9b51949
   EXTaskManager: 0128b9f39a088b0c762d8d1c42017e6d44200b29
   EXUpdatesInterface: 64f35449b8ef89ce08cdd8952a4d119b5de6821d
   fast_float: 06eeec4fe712a76acc9376682e4808b05ce978b6

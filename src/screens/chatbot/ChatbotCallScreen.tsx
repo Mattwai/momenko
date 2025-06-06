@@ -20,7 +20,7 @@ import { useVoiceCommunication } from "../../hooks/useVoiceCommunication";
 import { PreferredLanguage } from "../../types";
 import { useCulturalContext } from "../../contexts/CulturalContext";
 import VoiceInputIndicator from "../../components/ui/VoiceInputIndicator";
-import { Audio } from 'expo-av';
+import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av';
 
 import AVATAR_BG from "../../../assets/chatbot_avatar.jpg";
 
@@ -28,6 +28,8 @@ const ChatbotCallScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { culturalProfile, getCulturalGreeting, getAdaptedResponse } = useCulturalContext();
   const [callSeconds, setCallSeconds] = useState(0);
+  const [isInitializing, setIsInitializing] = useState(false);
+  const audioCleanupInProgress = useRef(false);
   const [transcripts, setTranscripts] = useState<
     Array<{ text: string; isFinal: boolean; timestamp: Date }>
   >([]);
@@ -36,6 +38,7 @@ const ChatbotCallScreen = () => {
   const [conversationSummary, setConversationSummary] = useState<string>('');
   const isScreenMounted = useRef(true);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const [isToggling, setIsToggling] = useState(false);
 
   // Handle navigation back with cleanup
   const handleNavigateBack = useCallback(() => {
@@ -81,60 +84,128 @@ const ChatbotCallScreen = () => {
     },
   });
 
-  const handleEndCall = useCallback(() => {
-    // Prevent multiple calls
-    if (!isScreenMounted.current) return;
+  const handleEndCall = useCallback(async () => {
+    if (!isScreenMounted.current || audioCleanupInProgress.current) return;
     
-    // First mark component as unmounted to prevent further state updates
+    audioCleanupInProgress.current = true;
     isScreenMounted.current = false;
     
-    // Clear the timer first to stop updates
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
     
-    // Stop all voice services (wrap in try/catch to prevent navigation blocking)
     const cleanup = async () => {
       try {
-        if (isListening) await stopListening();
-        if (isSpeaking) await stopSpeaking();
+        // First stop all active processes
+        if (isListening) {
+          await stopListening();
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
         
-        // Reset audio mode
+        if (isSpeaking) {
+          await stopSpeaking();
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
+        // Reset audio mode with a complete configuration reset
         await Audio.setAudioModeAsync({
           allowsRecordingIOS: false,
           playsInSilentModeIOS: false,
+          staysActiveInBackground: false,
+          interruptionModeIOS: InterruptionModeIOS.DoNotMix,
+          interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+          shouldDuckAndroid: false,
+          playThroughEarpieceAndroid: false,
         });
+        
+        // Longer delay before navigation to ensure cleanup completes
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
       } catch (err) {
         console.warn('Error during call cleanup:', err);
       } finally {
-        // Always navigate back regardless of cleanup errors
+        audioCleanupInProgress.current = false;
         navigation.navigate("Main", { screen: "Chatbot" });
       }
     };
     
-    // Execute cleanup
     cleanup();
   }, [navigation, stopListening, stopSpeaking, isListening, isSpeaking]);
 
-  // Set up audio mode once at the beginning
+  // Update the audio setup effect
   useEffect(() => {
+    let isMounted = true;
+    
     const setupAudio = async () => {
+      if (isInitializing) return;
+      
       try {
+        setIsInitializing(true);
+        
+        // Ensure any existing recording is stopped
+        if (audioCleanupInProgress.current) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+        
+        // First reset to default state
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          playsInSilentModeIOS: false,
+          staysActiveInBackground: false,
+        });
+        
+        // Longer delay to ensure cleanup
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        if (!isMounted) return;
+        
+        // Then set up new audio mode
         await Audio.setAudioModeAsync({
           allowsRecordingIOS: true,
           playsInSilentModeIOS: true,
           staysActiveInBackground: false,
           shouldDuckAndroid: true,
           playThroughEarpieceAndroid: false,
+          interruptionModeIOS: InterruptionModeIOS.DoNotMix,
+          interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
         });
+        
         console.log('🔊 Audio mode configured for call screen');
+        
+        // Add delay before allowing auto-start
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
       } catch (err) {
         console.warn('❌ Failed to set audio mode:', err);
+      } finally {
+        if (isMounted) {
+          setIsInitializing(false);
+        }
       }
     };
     
     setupAudio();
+    
+    return () => {
+      isMounted = false;
+      const cleanup = async () => {
+        try {
+          audioCleanupInProgress.current = true;
+          await Audio.setAudioModeAsync({
+            allowsRecordingIOS: false,
+            playsInSilentModeIOS: false,
+            staysActiveInBackground: false,
+          });
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } catch (err) {
+          console.warn('Error during audio cleanup:', err);
+        } finally {
+          audioCleanupInProgress.current = false;
+        }
+      };
+      cleanup();
+    };
   }, []);
 
   // Initialize voice only when the screen is focused and clean up when it's not
@@ -172,22 +243,25 @@ const ChatbotCallScreen = () => {
     };
   }, []);
 
-  // Auto-start listening when initialized
+  // Add the auto-start listening effect
   useEffect(() => {
-    if (isInitialized && !isListening && !isSpeaking && isScreenMounted.current) {
+    if (isInitialized && !isListening && !isSpeaking && 
+        isScreenMounted.current && !isInitializing && 
+        !audioCleanupInProgress.current) {
       console.log('🎤 Auto-starting listening on initialization');
       const timer = setTimeout(() => {
-        if (isScreenMounted.current && !isListening && !isSpeaking) {
+        if (isScreenMounted.current && !isListening && !isSpeaking && 
+            !audioCleanupInProgress.current) {
           startListening();
         }
-      }, 1500);
+      }, 1500); // Longer delay before auto-start
       
       return () => clearTimeout(timer);
     }
-  }, [isInitialized]);
+  }, [isInitialized, isListening, isSpeaking, startListening, isInitializing]);
 
-  const toggleListening = useCallback(() => {
-    if (!isScreenMounted.current) return;
+  const toggleListening = useCallback(async () => {
+    if (!isScreenMounted.current || isToggling) return;
     
     // Disable the toggle if not initialized
     if (!isInitialized) {
@@ -199,12 +273,50 @@ const ChatbotCallScreen = () => {
       return;
     }
     
-    if (isListening) {
-      stopListening();
-    } else {
-      startListening();
+    try {
+      setIsToggling(true);
+      Vibration.vibrate(50);
+      
+      if (isListening) {
+        await stopListening();
+        // Add a small delay before allowing next recording
+        await new Promise(resolve => setTimeout(resolve, 500));
+      } else {
+        // Reset audio mode before starting new recording
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: true,
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: false,
+          shouldDuckAndroid: true,
+          playThroughEarpieceAndroid: false,
+        });
+        
+        // Small delay to ensure audio mode is set
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        await startListening();
+      }
+    } catch (error) {
+      console.error('Error toggling listening state:', error);
+      // Reset audio mode on error
+      try {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          playsInSilentModeIOS: false,
+        });
+      } catch (cleanupError) {
+        console.warn('Error during cleanup:', cleanupError);
+      }
+      
+      Alert.alert(
+        "Voice Recognition Error",
+        "Failed to toggle voice recognition. Please try again.",
+        [{ text: "OK" }]
+      );
+    } finally {
+      setIsToggling(false);
     }
-  }, [isListening, startListening, stopListening, isInitialized]);
+  }, [isListening, startListening, stopListening, isInitialized, isToggling]);
 
   // Format call duration as HH:MM:SS
   const formatDuration = (secs: number) => {
@@ -463,13 +575,10 @@ const ChatbotCallScreen = () => {
             elevation={5}
           >
             <TouchableOpacity
-              onPress={() => {
-                Vibration.vibrate(50);
-                toggleListening();
-              }}
+              onPress={toggleListening}
               style={[
                 styles.callButton,
-                (!isInitialized || isSpeaking) ? styles.disabledButton : null
+                (!isInitialized || isSpeaking || isToggling) ? styles.disabledButton : null
               ]}
               accessible
               accessibilityRole="button"
@@ -478,7 +587,7 @@ const ChatbotCallScreen = () => {
               }
               accessibilityHint="Double tap to toggle voice recognition"
               activeOpacity={0.7}
-              disabled={!isInitialized || isSpeaking}
+              disabled={!isInitialized || isSpeaking || isToggling}
             >
               <Icon
                 name={isListening ? "microphone-off" : "microphone"}
